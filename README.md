@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS.
 
-> **Status:** v0.1.0 covers practical `MKLocalSearch`, `MKDirections`, `MKMapItem`, `MKPlacemark`, `MKCoordinateRegion`, `MKMapPoint`, and `MKDistanceFormatter` APIs for non-UI map workflows.
+> **Status:** v0.2.0 covers the requested MapKit areas for headless macOS workflows: `MKMapView`, annotations, overlays, local search, directions, snapshotters, geocoding, Look Around, point-of-interest filters, addresses, map items, cluster annotations, and user-tracking button visibility.
 
 ## Quick start
 
@@ -10,47 +10,41 @@ Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentatio
 use mapkit::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let map_view = MKMapView::new(MKScreenSize::new(320.0, 240.0))?;
     let center = MKCoordinate::new(37.3349, -122.0090);
-    let region = MKCoordinateRegion::with_distance(center, 5_000.0, 5_000.0)?;
-    let request = MKLocalSearchRequest::new("Apple Park")
-        .with_region(region)
-        .with_result_types(
-            MKLocalSearchResultType::ADDRESS | MKLocalSearchResultType::POINT_OF_INTEREST,
-        );
+    let region = MKCoordinateRegion::with_distance(center, 2_000.0, 2_000.0)?;
+    map_view.set_region(region, false)?;
 
-    let response = MKLocalSearch::search(&request)?;
-    if let Some(item) = response.map_items.first() {
-        if let Some(coordinate) = item.coordinate() {
-            println!(
-                "{} => {}, {}",
-                item.name.as_deref().unwrap_or("<unnamed>"),
-                coordinate.latitude,
-                coordinate.longitude
-            );
-        }
-    }
+    let annotation = MKPointAnnotation::new(center)?;
+    annotation.set_title(Some("Apple Park"))?;
+    map_view.add_point_annotation(&annotation)?;
 
+    println!("annotations={}", map_view.annotation_count()?);
     Ok(())
 }
 ```
 
 ## Highlights
 
-- `MKLocalSearchRequest` + `MKLocalSearch::search` for query-based place lookup
-- `MKDirectionsRequest` + `MKDirections::calculate` / `calculate_eta` for route planning
-- `MKDistanceFormatter` for localized distance formatting and parsing
-- `MKCoordinateRegion::with_distance`, `MKMapPoint::from_coordinate`, and `MKMapPoint::distance_to`
-- JSON-safe snapshots for `MKMapItem`, `MKPlacemark`, `MKRoute`, `MKRouteStep`, and ETA responses
+- `MKMapView` creation, region/map-rect conversions, interaction toggles, annotations, overlays, and user tracking mode
+- `MKPointAnnotation`, `MKClusterAnnotation`, `MKCircle`, `MKPolyline`, and `MKPolygon`
+- `MKLocalSearch` and `MKDirections` request/response bridges for search and routing services
+- `MKMapSnapshotter` and `MKLookAroundSnapshotter` wrappers for headless image generation
+- `MKGeocodingRequest` and `MKReverseGeocodingRequest` on macOS 26+
+- `MKPointOfInterestFilter`, `MKLocalPointsOfInterestRequest`, `MKAddress`, and `MKAddressFilter`
+- `MKMapItem` / `MKPlacemark` data models that round-trip through the Swift bridge
 
-## Smoke example
+## Examples
 
-Run the framework smoke test with:
+This crate ships numbered, headless-safe examples for every logical area:
 
 ```bash
-cargo run --all-features --example 01_mapkit_smoke
+cargo run --example 01_mapkit_smoke
+cargo run --example 07_snapshotter_basic
+cargo run --example 14_user_tracking_button_basic
 ```
 
-Expected success footer:
+Expected success footer from the smoke example:
 
 ```text
 ✅ mapkit OK
@@ -58,8 +52,9 @@ Expected success footer:
 
 ## Notes
 
-- The smoke example performs a live `MKLocalSearch` for “Apple Park”, so it requires network access.
-- This crate intentionally focuses on non-UI MapKit APIs and does not wrap `MKMapView`.
+- The examples are designed to exit successfully on a headless macOS host.
+- `MKUserTrackingButton` is not exposed as a standalone native macOS class in the SDK, so this crate wraps the equivalent `MKMapView.showsUserTrackingButton` / `userTrackingMode` functionality instead.
+- `COVERAGE.md` contains the SDK audit and the skip/defer rationale for UI- or launcher-oriented APIs that are intentionally not exercised from tests.
 
 ## License
 

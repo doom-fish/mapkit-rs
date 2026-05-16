@@ -1,3 +1,4 @@
+import AppKit
 import CoreLocation
 import Foundation
 import MapKit
@@ -58,7 +59,7 @@ public func mkrEncodeJSON<T: Encodable>(_ value: T) throws -> String {
     return string
 }
 
-public func mkrDecodeJSON<T: Decodable>(_ json: UnsafePointer<CChar>?, as type: T.Type) throws -> T {
+public func mkrDecodeJSON<T: Decodable>(_ json: UnsafePointer<CChar>?, as _: T.Type) throws -> T {
     guard let json else {
         throw NSError(
             domain: "mapkit-rs",
@@ -106,6 +107,18 @@ public func mkrSetMessageError(
     } else {
         outError.pointee = mkrCString(message)
     }
+}
+
+public func mkrSyncOnMain<T>(_ operation: @escaping () throws -> T) throws -> T {
+    if Thread.isMainThread {
+        return try operation()
+    }
+
+    var outcome: Result<T, Error>!
+    DispatchQueue.main.sync {
+        outcome = Result { try operation() }
+    }
+    return try outcome.get()
 }
 
 public func mkrAwaitOnMain<T>(
@@ -156,4 +169,17 @@ public func mkrAwaitOnMain<T>(
     }
 
     return try outcome.get()
+}
+
+public func mkrImageByteLength(_ image: NSImage) -> Int {
+    image.tiffRepresentation?.count ?? 0
+}
+
+public func mkrLocaleIdentifier(_ locale: Locale?) -> String? {
+    locale?.identifier
+}
+
+public func mkrLocale(from identifier: String?) -> Locale? {
+    guard let identifier else { return nil }
+    return Locale(identifier: identifier)
 }

@@ -1,0 +1,170 @@
+use core::ffi::c_void;
+use std::ptr::{self, NonNull};
+
+use serde::{Deserialize, Serialize};
+
+use crate::error::MapKitError;
+use crate::ffi;
+use crate::geometry::{
+    MKCoordinate, MKCoordinateRegion, MKMapRect, MKScreenPoint, MKScreenSize,
+};
+use crate::map_view::MKMapType;
+use crate::point_of_interest::MKPointOfInterestFilter;
+use crate::private::{json_cstring, owned_handle, parse_json_ptr};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MKMapSnapshotOptions {
+    pub region: Option<MKCoordinateRegion>,
+    pub map_rect: Option<MKMapRect>,
+    pub map_type: Option<MKMapType>,
+    pub point_of_interest_filter: Option<MKPointOfInterestFilter>,
+    #[serde(default)]
+    pub shows_points_of_interest: bool,
+    #[serde(default)]
+    pub shows_buildings: bool,
+    pub size: MKScreenSize,
+}
+
+impl MKMapSnapshotOptions {
+    pub const fn new(size: MKScreenSize) -> Self {
+        Self {
+            region: None,
+            map_rect: None,
+            map_type: None,
+            point_of_interest_filter: None,
+            shows_points_of_interest: false,
+            shows_buildings: false,
+            size,
+        }
+    }
+
+    pub fn with_region(mut self, region: MKCoordinateRegion) -> Self {
+        self.region = Some(region);
+        self
+    }
+
+    pub fn with_map_rect(mut self, map_rect: MKMapRect) -> Self {
+        self.map_rect = Some(map_rect);
+        self
+    }
+
+    pub fn with_map_type(mut self, map_type: MKMapType) -> Self {
+        self.map_type = Some(map_type);
+        self
+    }
+
+    pub fn with_point_of_interest_filter(
+        mut self,
+        point_of_interest_filter: MKPointOfInterestFilter,
+    ) -> Self {
+        self.point_of_interest_filter = Some(point_of_interest_filter);
+        self
+    }
+
+    pub fn with_shows_points_of_interest(mut self, shows_points_of_interest: bool) -> Self {
+        self.shows_points_of_interest = shows_points_of_interest;
+        self
+    }
+
+    pub fn with_shows_buildings(mut self, shows_buildings: bool) -> Self {
+        self.shows_buildings = shows_buildings;
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MKMapSnapshotState {
+    image_byte_len: usize,
+    size: MKScreenSize,
+}
+
+#[derive(Debug)]
+pub struct MKMapSnapshotter {
+    raw: NonNull<c_void>,
+}
+
+impl MKMapSnapshotter {
+    pub fn new(options: &MKMapSnapshotOptions) -> Result<Self, MapKitError> {
+        let options = json_cstring(options, "MKMapSnapshotOptions")?;
+        let mut error = ptr::null_mut();
+        let raw = unsafe { ffi::mk_map_snapshotter_new(options.as_ptr(), &mut error) };
+        let raw = owned_handle(raw, error, "failed to create MKMapSnapshotter")?;
+        Ok(Self { raw })
+    }
+
+    pub fn start(&self) -> Result<MKMapSnapshot, MapKitError> {
+        let mut error = ptr::null_mut();
+        let raw = unsafe { ffi::mk_map_snapshotter_start(self.raw.as_ptr(), &mut error) };
+        let raw = owned_handle(raw, error, "MKMapSnapshotter start failed")?;
+        Ok(MKMapSnapshot { raw })
+    }
+
+    pub fn is_loading(&self) -> bool {
+        unsafe { ffi::mk_map_snapshotter_is_loading(self.raw.as_ptr()) }
+    }
+
+    pub fn cancel(&self) {
+        unsafe { ffi::mk_map_snapshotter_cancel(self.raw.as_ptr()) };
+    }
+}
+
+impl Drop for MKMapSnapshotter {
+    fn drop(&mut self) {
+        unsafe { ffi::mk_map_snapshotter_release(self.raw.as_ptr()) };
+    }
+}
+
+#[derive(Debug)]
+pub struct MKMapSnapshot {
+    raw: NonNull<c_void>,
+}
+
+impl MKMapSnapshot {
+    fn state(&self) -> Result<MKMapSnapshotState, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload = unsafe { ffi::mk_map_snapshot_state_json(self.raw.as_ptr(), &mut error) };
+        if payload.is_null() {
+            Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKMapSnapshot state") })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKMapSnapshot state") }
+        }
+    }
+
+    pub fn image_byte_len(&self) -> Result<usize, MapKitError> {
+        Ok(self.state()?.image_byte_len)
+    }
+
+    pub fn size(&self) -> Result<MKScreenSize, MapKitError> {
+        Ok(self.state()?.size)
+    }
+
+    pub fn point_for_coordinate(
+        &self,
+        coordinate: MKCoordinate,
+    ) -> Result<MKScreenPoint, MapKitError> {
+        let coordinate = json_cstring(&coordinate, "MKCoordinate")?;
+        let mut error = ptr::null_mut();
+        let payload = unsafe {
+            ffi::mk_map_snapshot_point_for_coordinate_json(
+                self.raw.as_ptr(),
+                coordinate.as_ptr(),
+                &mut error,
+            )
+        };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(error, "MKMapSnapshot pointForCoordinate failed")
+            })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKScreenPoint") }
+        }
+    }
+}
+
+impl Drop for MKMapSnapshot {
+    fn drop(&mut self) {
+        unsafe { ffi::mk_map_snapshot_release(self.raw.as_ptr()) };
+    }
+}

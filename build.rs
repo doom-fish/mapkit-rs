@@ -14,6 +14,7 @@ use std::env;
             println!("cargo:rustc-link-lib=framework=Foundation");
             println!("cargo:rustc-link-lib=framework=CoreLocation");
             println!("cargo:rustc-link-lib=framework=CoreGraphics");
+            println!("cargo:rustc-link-lib=framework=AppKit");
 
             let swift_dir = "swift-bridge";
             let out_dir = env::var("OUT_DIR").unwrap();
