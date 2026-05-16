@@ -33,6 +33,10 @@ struct MKRMapViewStatePayload: Codable {
     var region: MKRCoordinateRegionPayload
     var centerCoordinate: MKRCoordinatePayload
     var visibleMapRect: MKRMapRectPayload
+    var camera: MKRMapCameraPayload
+    var cameraZoomRange: MKRMapCameraZoomRangePayload?
+    var cameraBoundary: MKRMapCameraBoundaryPayload?
+    var preferredConfiguration: MKRMapConfigurationPayload?
     var zoomEnabled: Bool
     var scrollEnabled: Bool
     var rotateEnabled: Bool
@@ -54,6 +58,12 @@ struct MKRMapViewOptionsPayload: Codable {
     var region: MKRCoordinateRegionPayload?
     var centerCoordinate: MKRCoordinatePayload?
     var visibleMapRect: MKRMapRectPayload?
+    var camera: MKRMapCameraPayload?
+    var cameraZoomRangePresent: Bool
+    var cameraZoomRange: MKRMapCameraZoomRangePayload?
+    var cameraBoundaryPresent: Bool
+    var cameraBoundary: MKRMapCameraBoundaryPayload?
+    var preferredConfiguration: MKRMapConfigurationPayload?
     var zoomEnabled: Bool?
     var scrollEnabled: Bool?
     var rotateEnabled: Bool?
@@ -162,6 +172,10 @@ private func mkrEncodeMapViewState(_ mapView: MKMapView) -> MKRMapViewStatePaylo
         region: mkrEncodeRegion(mapView.region),
         centerCoordinate: mkrEncodeCoordinate(mapView.centerCoordinate),
         visibleMapRect: mkrEncodeMapRect(mapView.visibleMapRect),
+        camera: mkrEncodeMapCamera(mapView.camera),
+        cameraZoomRange: mkrEncodeMapCameraZoomRange(mapView.cameraZoomRange),
+        cameraBoundary: mkrEncodeMapCameraBoundary(mapView.cameraBoundary),
+        preferredConfiguration: mkrEncodeMapConfiguration(mapView.preferredConfiguration),
         zoomEnabled: mapView.isZoomEnabled,
         scrollEnabled: mapView.isScrollEnabled,
         rotateEnabled: mapView.isRotateEnabled,
@@ -248,6 +262,24 @@ public func mk_map_view_apply_options_json(
                     mkrMapRect(from: visibleMapRect),
                     animated: payload.animated ?? false
                 )
+            }
+            if let camera = payload.camera {
+                view.setCamera(mkrBuildMapCamera(camera), animated: payload.animated ?? false)
+            }
+            if payload.cameraZoomRangePresent {
+                view.setCameraZoomRange(
+                    try payload.cameraZoomRange.map(mkrBuildMapCameraZoomRange),
+                    animated: payload.animated ?? false
+                )
+            }
+            if payload.cameraBoundaryPresent {
+                view.setCameraBoundary(
+                    try payload.cameraBoundary.map(mkrBuildMapCameraBoundary),
+                    animated: payload.animated ?? false
+                )
+            }
+            if let preferredConfiguration = payload.preferredConfiguration {
+                view.preferredConfiguration = mkrBuildMapConfiguration(preferredConfiguration)
             }
             if let zoomEnabled = payload.zoomEnabled {
                 view.isZoomEnabled = zoomEnabled

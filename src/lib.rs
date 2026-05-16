@@ -15,7 +15,9 @@
 
 pub mod address;
 pub mod annotation;
+pub mod annotation_view;
 pub mod cluster_annotation;
+pub mod configuration;
 pub mod directions;
 pub mod distance_formatter;
 pub mod error;
@@ -23,12 +25,14 @@ mod ffi;
 pub mod geocoder;
 pub mod geometry;
 pub mod local_search;
+pub mod local_search_completer;
 pub mod look_around;
 pub mod map_item;
 pub mod map_view;
 pub mod overlay;
-mod private;
+pub mod overlay_renderer;
 pub mod point_of_interest;
+mod private;
 pub mod services;
 pub mod snapshotter;
 pub mod types;
@@ -39,7 +43,16 @@ pub use address::{
     MKAddressRepresentations, MKAddressRepresentationsContextStyle,
 };
 pub use annotation::MKPointAnnotation;
+pub use annotation_view::{
+    MKAnnotation, MKAnnotationView, MKAnnotationViewCollisionMode, MKAnnotationViewDragState,
+    MKAnnotationViewZPriority, MKFeatureDisplayPriority, MKMarkerAnnotationView,
+};
 pub use cluster_annotation::MKClusterAnnotation;
+pub use configuration::{
+    MKHybridMapConfiguration, MKImageryMapConfiguration, MKMapCamera, MKMapCameraBoundary,
+    MKMapCameraZoomRange, MKMapConfiguration, MKMapConfigurationKind, MKMapElevationStyle,
+    MKStandardMapConfiguration, MKStandardMapEmphasisStyle,
+};
 pub use directions::{
     MKDirections, MKDirectionsRequest, MKDirectionsResponse, MKDirectionsRoutePreference,
     MKDirectionsTransportType, MKETAResponse, MKRoute, MKRouteStep,
@@ -57,15 +70,25 @@ pub use local_search::{
     MKLocalSearch, MKLocalSearchRegionPriority, MKLocalSearchRequest, MKLocalSearchResponse,
     MKLocalSearchResultType,
 };
+pub use local_search_completer::{
+    MKLocalSearchCompleter, MKLocalSearchCompleterDelegate, MKLocalSearchCompleterResultType,
+    MKLocalSearchCompletion, MKTextHighlightRange,
+};
 pub use look_around::{
-    MKLookAroundScene, MKLookAroundSceneRequest, MKLookAroundSnapshot,
-    MKLookAroundSnapshotOptions, MKLookAroundSnapshotter,
+    MKLookAroundScene, MKLookAroundSceneRequest, MKLookAroundSnapshot, MKLookAroundSnapshotOptions,
+    MKLookAroundSnapshotter,
 };
 pub use map_item::{MKMapItem, MKPlacemark};
-pub use map_view::{
-    MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode,
+pub use map_view::{MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode};
+pub use overlay::{
+    MKCircle, MKGeodesicPolyline, MKMultiPoint, MKOverlay, MKOverlayLevel, MKPolygon, MKPolyline,
+    MKShape, MKTileOverlay, MKTileOverlayPath,
 };
-pub use overlay::{MKCircle, MKOverlayLevel, MKPolygon, MKPolyline};
+pub use overlay_renderer::{
+    mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
+    MKOverlayPathRenderer, MKOverlayRenderer, MKPolygonRenderer, MKPolylineRenderer,
+    MKTileOverlayRenderer, MKZoomScale,
+};
 pub use point_of_interest::{
     MKLocalPointsOfInterestRequest, MKPointOfInterestCategory, MKPointOfInterestFilter,
     MKPointOfInterestFilterMode,
@@ -80,7 +103,16 @@ pub mod prelude {
         MKAddressRepresentations, MKAddressRepresentationsContextStyle,
     };
     pub use crate::annotation::MKPointAnnotation;
+    pub use crate::annotation_view::{
+        MKAnnotation, MKAnnotationView, MKAnnotationViewCollisionMode, MKAnnotationViewDragState,
+        MKAnnotationViewZPriority, MKFeatureDisplayPriority, MKMarkerAnnotationView,
+    };
     pub use crate::cluster_annotation::MKClusterAnnotation;
+    pub use crate::configuration::{
+        MKHybridMapConfiguration, MKImageryMapConfiguration, MKMapCamera, MKMapCameraBoundary,
+        MKMapCameraZoomRange, MKMapConfiguration, MKMapConfigurationKind, MKMapElevationStyle,
+        MKStandardMapConfiguration, MKStandardMapEmphasisStyle,
+    };
     pub use crate::directions::{
         MKDirections, MKDirectionsRequest, MKDirectionsResponse, MKDirectionsRoutePreference,
         MKDirectionsTransportType, MKETAResponse, MKRoute, MKRouteStep,
@@ -95,21 +127,31 @@ pub mod prelude {
         MKScreenPoint, MKScreenSize,
     };
     pub use crate::local_search::{
-        MKLocalSearch, MKLocalSearchRegionPriority, MKLocalSearchRequest,
-        MKLocalSearchResponse, MKLocalSearchResultType,
+        MKLocalSearch, MKLocalSearchRegionPriority, MKLocalSearchRequest, MKLocalSearchResponse,
+        MKLocalSearchResultType,
+    };
+    pub use crate::local_search_completer::{
+        MKLocalSearchCompleter, MKLocalSearchCompleterDelegate, MKLocalSearchCompleterResultType,
+        MKLocalSearchCompletion, MKTextHighlightRange,
     };
     pub use crate::look_around::{
         MKLookAroundScene, MKLookAroundSceneRequest, MKLookAroundSnapshot,
         MKLookAroundSnapshotOptions, MKLookAroundSnapshotter,
     };
     pub use crate::map_item::{MKMapItem, MKPlacemark};
-    pub use crate::map_view::{
-        MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode,
+    pub use crate::map_view::{MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode};
+    pub use crate::overlay::{
+        MKCircle, MKGeodesicPolyline, MKMultiPoint, MKOverlay, MKOverlayLevel, MKPolygon,
+        MKPolyline, MKShape, MKTileOverlay, MKTileOverlayPath,
     };
-    pub use crate::overlay::{MKCircle, MKOverlayLevel, MKPolygon, MKPolyline};
+    pub use crate::overlay_renderer::{
+        mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
+        MKOverlayPathRenderer, MKOverlayRenderer, MKPolygonRenderer, MKPolylineRenderer,
+        MKTileOverlayRenderer, MKZoomScale,
+    };
     pub use crate::point_of_interest::{
-        MKLocalPointsOfInterestRequest, MKPointOfInterestCategory,
-        MKPointOfInterestFilter, MKPointOfInterestFilterMode,
+        MKLocalPointsOfInterestRequest, MKPointOfInterestCategory, MKPointOfInterestFilter,
+        MKPointOfInterestFilterMode,
     };
     pub use crate::snapshotter::{MKMapSnapshot, MKMapSnapshotOptions, MKMapSnapshotter};
     pub use crate::user_tracking_button::MKUserTrackingButton;

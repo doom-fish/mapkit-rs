@@ -10,14 +10,61 @@ struct MKRCircleStatePayload: Codable {
     var coordinate: MKRCoordinatePayload
     var radius: Double
     var boundingMapRect: MKRMapRectPayload
+    var canReplaceMapContent: Bool
 }
 
 struct MKRMultiPointStatePayload: Codable {
     var coordinate: MKRCoordinatePayload
     var boundingMapRect: MKRMapRectPayload
+    var canReplaceMapContent: Bool
     var pointCount: Int
     var coordinates: [MKRCoordinatePayload]
     var interiorPolygonCount: Int?
+}
+
+struct MKRTileOverlayPathPayload: Codable {
+    var x: Int
+    var y: Int
+    var z: Int
+    var contentScaleFactor: Double
+}
+
+struct MKRTileOverlayStatePayload: Codable {
+    var coordinate: MKRCoordinatePayload
+    var boundingMapRect: MKRMapRectPayload
+    var urlTemplate: String?
+    var tileSize: MKRScreenSizePayload
+    var geometryFlipped: Bool
+    var minimumZ: Int
+    var maximumZ: Int
+    var canReplaceMapContent: Bool
+}
+
+struct MKRTileOverlayOptionsPayload: Codable {
+    var tileSize: MKRScreenSizePayload?
+    var geometryFlipped: Bool?
+    var minimumZ: Int?
+    var maximumZ: Int?
+    var canReplaceMapContent: Bool?
+}
+
+func mkrBorrowOverlay(_ ptr: UnsafeMutableRawPointer?) throws -> any MKOverlay {
+    guard let ptr else {
+        throw NSError(
+            domain: "mapkit-rs",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "missing MKOverlay"]
+        )
+    }
+    let object = Unmanaged<AnyObject>.fromOpaque(ptr).takeUnretainedValue()
+    guard let overlay = object as? any MKOverlay else {
+        throw NSError(
+            domain: "mapkit-rs",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "object does not conform to MKOverlay"]
+        )
+    }
+    return overlay
 }
 
 private func mkrEncodeMultiPointState(_ multiPoint: MKMultiPoint) -> MKRMultiPointStatePayload {
@@ -29,12 +76,27 @@ private func mkrEncodeMultiPointState(_ multiPoint: MKMultiPoint) -> MKRMultiPoi
     if pointCount > 0 {
         multiPoint.getCoordinates(&coordinates, range: NSRange(location: 0, length: pointCount))
     }
+    let overlay = multiPoint as! MKOverlay
     return MKRMultiPointStatePayload(
         coordinate: mkrEncodeCoordinate(multiPoint.coordinate),
-        boundingMapRect: mkrEncodeMapRect((multiPoint as! MKOverlay).boundingMapRect),
+        boundingMapRect: mkrEncodeMapRect(overlay.boundingMapRect),
+        canReplaceMapContent: overlay.canReplaceMapContent?() ?? false,
         pointCount: pointCount,
         coordinates: mkrEncodeCoordinates(coordinates),
         interiorPolygonCount: (multiPoint as? MKPolygon)?.interiorPolygons?.count
+    )
+}
+
+private func mkrEncodeTileOverlayState(_ overlay: MKTileOverlay) -> MKRTileOverlayStatePayload {
+    MKRTileOverlayStatePayload(
+        coordinate: mkrEncodeCoordinate(overlay.coordinate),
+        boundingMapRect: mkrEncodeMapRect(overlay.boundingMapRect),
+        urlTemplate: overlay.urlTemplate,
+        tileSize: mkrEncodeScreenSize(overlay.tileSize),
+        geometryFlipped: overlay.isGeometryFlipped,
+        minimumZ: overlay.minimumZ,
+        maximumZ: overlay.maximumZ,
+        canReplaceMapContent: overlay.canReplaceMapContent
     )
 }
 
@@ -71,7 +133,8 @@ public func mk_circle_state_json(
         let payload = MKRCircleStatePayload(
             coordinate: mkrEncodeCoordinate(overlay.coordinate),
             radius: overlay.radius,
-            boundingMapRect: mkrEncodeMapRect(overlay.boundingMapRect)
+            boundingMapRect: mkrEncodeMapRect(overlay.boundingMapRect),
+            canReplaceMapContent: (overlay as MKOverlay).canReplaceMapContent?() ?? false
         )
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
@@ -136,6 +199,56 @@ public func mk_polyline_release(_ polyline: UnsafeMutableRawPointer?) {
     mkrRelease(polyline)
 }
 
+@_cdecl("mk_geodesic_polyline_new_json")
+public func mk_geodesic_polyline_new_json(
+    _ payloadJSON: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    do {
+        let payload = try mkrDecodeJSON(payloadJSON, as: [MKRCoordinatePayload].self)
+        let coordinates = mkrCoordinates(from: payload)
+        guard !coordinates.isEmpty else {
+            throw NSError(
+                domain: "mapkit-rs",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "MKGeodesicPolyline requires at least one coordinate"]
+            )
+        }
+        let polyline = coordinates.withUnsafeBufferPointer { buffer in
+            MKGeodesicPolyline(coordinates: buffer.baseAddress!, count: buffer.count)
+        }
+        return mkrRetain(polyline)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_geodesic_polyline_state_json")
+public func mk_geodesic_polyline_state_json(
+    _ polyline: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let polyline else {
+        mkrSetMessageError(outError, message: "missing MKGeodesicPolyline")
+        return nil
+    }
+
+    do {
+        let overlay = mkrBorrow(polyline, as: MKGeodesicPolyline.self)
+        return mkrCString(try mkrEncodeJSON(mkrEncodeMultiPointState(overlay)))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_geodesic_polyline_release")
+public func mk_geodesic_polyline_release(_ polyline: UnsafeMutableRawPointer?) {
+    guard let polyline else { return }
+    mkrRelease(polyline)
+}
+
 @_cdecl("mk_polygon_new_json")
 public func mk_polygon_new_json(
     _ payloadJSON: UnsafePointer<CChar>?,
@@ -184,4 +297,100 @@ public func mk_polygon_state_json(
 public func mk_polygon_release(_ polygon: UnsafeMutableRawPointer?) {
     guard let polygon else { return }
     mkrRelease(polygon)
+}
+
+@_cdecl("mk_tile_overlay_new")
+public func mk_tile_overlay_new(
+    _ urlTemplate: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    let overlay = MKTileOverlay(urlTemplate: urlTemplate.map(String.init(cString:)))
+    return mkrRetain(overlay)
+}
+
+@_cdecl("mk_tile_overlay_state_json")
+public func mk_tile_overlay_state_json(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKTileOverlay")
+        return nil
+    }
+
+    do {
+        let bridge = mkrBorrow(overlay, as: MKTileOverlay.self)
+        let payload = mkrEncodeTileOverlayState(bridge)
+        return mkrCString(try mkrEncodeJSON(payload))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_tile_overlay_apply_options_json")
+public func mk_tile_overlay_apply_options_json(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ payloadJSON: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKTileOverlay")
+        return
+    }
+
+    do {
+        let bridge = mkrBorrow(overlay, as: MKTileOverlay.self)
+        let payload = try mkrDecodeJSON(payloadJSON, as: MKRTileOverlayOptionsPayload.self)
+        if let tileSize = payload.tileSize {
+            bridge.tileSize = mkrScreenSize(from: tileSize)
+        }
+        if let geometryFlipped = payload.geometryFlipped {
+            bridge.isGeometryFlipped = geometryFlipped
+        }
+        if let minimumZ = payload.minimumZ {
+            bridge.minimumZ = minimumZ
+        }
+        if let maximumZ = payload.maximumZ {
+            bridge.maximumZ = maximumZ
+        }
+        if let canReplaceMapContent = payload.canReplaceMapContent {
+            bridge.canReplaceMapContent = canReplaceMapContent
+        }
+    } catch {
+        mkrSetError(outError, error)
+    }
+}
+
+@_cdecl("mk_tile_overlay_url_for_tile_path_json")
+public func mk_tile_overlay_url_for_tile_path_json(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ payloadJSON: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKTileOverlay")
+        return nil
+    }
+
+    do {
+        let bridge = mkrBorrow(overlay, as: MKTileOverlay.self)
+        let payload = try mkrDecodeJSON(payloadJSON, as: MKRTileOverlayPathPayload.self)
+        let path = MKTileOverlayPath(
+            x: payload.x,
+            y: payload.y,
+            z: payload.z,
+            contentScaleFactor: payload.contentScaleFactor
+        )
+        return mkrCString(try mkrEncodeJSON(bridge.url(forTilePath: path).absoluteString))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_tile_overlay_release")
+public func mk_tile_overlay_release(_ overlay: UnsafeMutableRawPointer?) {
+    guard let overlay else { return }
+    mkrRelease(overlay)
 }

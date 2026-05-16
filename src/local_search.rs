@@ -7,11 +7,9 @@ use serde::{Deserialize, Serialize};
 use crate::address::MKAddressFilter;
 use crate::error::MapKitError;
 use crate::ffi;
-use crate::map_item::MKMapItem;
-use crate::point_of_interest::{
-    MKLocalPointsOfInterestRequest, MKPointOfInterestFilter,
-};
 use crate::geometry::MKCoordinateRegion;
+use crate::map_item::MKMapItem;
+use crate::point_of_interest::{MKLocalPointsOfInterestRequest, MKPointOfInterestFilter};
 use crate::private::{json_cstring, owned_handle, parse_json_ptr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -22,9 +20,8 @@ impl MKLocalSearchResultType {
     pub const ADDRESS: Self = Self(1 << 0);
     pub const POINT_OF_INTEREST: Self = Self(1 << 1);
     pub const PHYSICAL_FEATURE: Self = Self(1 << 2);
-    pub const ALL: Self = Self(
-        Self::ADDRESS.0 | Self::POINT_OF_INTEREST.0 | Self::PHYSICAL_FEATURE.0,
-    );
+    pub const ALL: Self =
+        Self(Self::ADDRESS.0 | Self::POINT_OF_INTEREST.0 | Self::PHYSICAL_FEATURE.0);
 
     pub const fn bits(self) -> u64 {
         self.0
@@ -111,10 +108,7 @@ impl MKLocalSearchRequest {
         self
     }
 
-    pub fn with_region_priority(
-        mut self,
-        region_priority: MKLocalSearchRegionPriority,
-    ) -> Self {
+    pub fn with_region_priority(mut self, region_priority: MKLocalSearchRegionPriority) -> Self {
         self.region_priority = region_priority;
         self
     }
@@ -144,6 +138,7 @@ impl MKLocalSearch {
     pub fn from_points_of_interest_request(
         request: &MKLocalPointsOfInterestRequest,
     ) -> Result<Self, MapKitError> {
+        request.validate()?;
         let request_json = json_cstring(request, "MKLocalPointsOfInterestRequest")?;
         let mut error = ptr::null_mut();
         let raw = unsafe {

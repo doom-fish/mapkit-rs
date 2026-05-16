@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-05-16
+
+- Added `MKMapCamera`, `MKMapCameraBoundary`, `MKMapCameraZoomRange`, `MKMapConfiguration`, and the standard/hybrid/imagery configuration wrappers.
+- Added `MKAnnotationView`, `MKMarkerAnnotationView`, overlay renderer/tile overlay wrappers, and `MKRoadWidthAtZoomScale`.
+- Added `MKLocalSearchCompleter` bindings plus the remaining `MKPointOfInterestCategory` convenience constructors and `MKPointsOfInterestRequestMaxRadius` access.
+- Added examples and smoke coverage for configuration/camera, local search completer, annotation views, overlay renderers, and point-of-interest requests.
+- Updated `COVERAGE_AUDIT.md` to 167 verified macOS MapKit symbols (68.7% coverage).
+
 ## [0.2.0] - 2026-05-16
 
 - Split the Swift bridge and Rust surface into logical modules for MapView, Annotation, Overlay, LocalSearch, Directions, Snapshotter, Geocoder, LookAround, PointOfInterest, Address, MKMapItem, ClusterAnnotation, and UserTrackingButton.
