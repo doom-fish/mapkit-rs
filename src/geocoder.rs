@@ -115,6 +115,12 @@ impl MKGeocodingRequest {
     pub fn cancel(&self) {
         unsafe { ffi::mk_geocoding_request_cancel(self.raw.as_ptr()) };
     }
+
+    pub(crate) fn into_raw(self) -> *mut c_void {
+        let raw = self.raw.as_ptr();
+        std::mem::forget(self);
+        raw
+    }
 }
 
 impl Drop for MKGeocodingRequest {
@@ -210,6 +216,12 @@ impl MKReverseGeocodingRequest {
 
     pub fn cancel(&self) {
         unsafe { ffi::mk_reverse_geocoding_request_cancel(self.raw.as_ptr()) };
+    }
+
+    pub(crate) fn into_raw(self) -> *mut c_void {
+        let raw = self.raw.as_ptr();
+        std::mem::forget(self);
+        raw
     }
 }
 

@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS.
 
-> **Status:** v0.2.3 reaches 100% audited coverage for the non-exempt macOS 26.2 MapKit SDK surface, including headless-safe wrappers for geometry helpers, GeoJSON decoding, map-item launch/request extras, error constants, and Rust-modeled control/controller/delegate APIs alongside the existing map/search/directions/rendering surfaces.
+> **Status:** v0.3.0 adds an executor-agnostic `async` feature (Tier-1 async API) on top of full audited coverage for the non-exempt macOS 26.2 MapKit SDK surface.
 
 ## Quick start
 
@@ -23,6 +23,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+## Async API
+
+Enable the `async` Cargo feature for executor-agnostic [`Future`] wrappers
+around MapKit's completion-handler APIs (works with Tokio, async-std, smol,
+pollster, …):
+
+```toml
+[dependencies]
+mapkit = { version = "0.3", features = ["async"] }
+```
+
+```rust,no_run
+# #[cfg(feature = "async")]
+# fn main() -> Result<(), Box<dyn std::error::Error>> { pollster::block_on(async {
+use mapkit::async_api::{AsyncMKLocalSearch, AsyncMKDirections};
+use mapkit::local_search::MKLocalSearchRequest;
+
+// Async local search
+let response = AsyncMKLocalSearch::search(
+    &MKLocalSearchRequest::new("coffee")
+)?.await?;
+println!("Found {} results", response.map_items.len());
+# Ok(()) }) }
+```
+
+### Async surface (Tier 1)
+
+| Type | Maps to |
+|------|---------|
+| `AsyncMKLocalSearch` | `MKLocalSearch.start(completionHandler:)` |
+| `AsyncMKDirections` | `MKDirections.calculate` / `calculateETA` |
+| `AsyncMKMapSnapshotter` | `MKMapSnapshotter.start(completionHandler:)` |
+| `AsyncMKGeocodingRequest` | `MKGeocodingRequest.getMapItems` (macOS 26.0+) |
+| `AsyncMKReverseGeocodingRequest` | `MKReverseGeocodingRequest.getMapItems` (macOS 26.0+) |
+
+> **Note:** `MKLocalSearch` and `MKDirections` dispatch their callbacks on the
+> main queue; the main run loop must be active for those futures to resolve.
+> `MKMapSnapshotter` uses a background queue and has no such restriction.
+>
+> Multi-fire delegate surfaces (`MKLocalSearchCompleter`, `MKMapViewDelegate`)
+> are deferred to a Tier-2 Stream rollout.
 
 ## Highlights
 

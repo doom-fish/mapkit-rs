@@ -108,6 +108,12 @@ impl MKMapSnapshotter {
     pub fn cancel(&self) {
         unsafe { ffi::mk_map_snapshotter_cancel(self.raw.as_ptr()) };
     }
+
+    pub(crate) fn into_raw(self) -> *mut c_void {
+        let raw = self.raw.as_ptr();
+        std::mem::forget(self);
+        raw
+    }
 }
 
 impl Drop for MKMapSnapshotter {
@@ -122,6 +128,10 @@ pub struct MKMapSnapshot {
 }
 
 impl MKMapSnapshot {
+    pub(crate) unsafe fn from_raw_ptr(ptr: *mut c_void) -> Option<Self> {
+        NonNull::new(ptr).map(|raw| Self { raw })
+    }
+
     fn state(&self) -> Result<MKMapSnapshotState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe { ffi::mk_map_snapshot_state_json(self.raw.as_ptr(), &mut error) };

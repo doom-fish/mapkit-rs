@@ -44,6 +44,10 @@ pub mod snapshotter;
 pub mod types;
 pub mod user_tracking_button;
 
+#[cfg(feature = "async")]
+#[cfg_attr(docsrs, doc(cfg(feature = "async")))]
+pub mod async_api;
+
 pub use address::{
     MKAddress, MKAddressFilter, MKAddressFilterMode, MKAddressFilterOption,
     MKAddressRepresentations, MKAddressRepresentationsContextStyle,

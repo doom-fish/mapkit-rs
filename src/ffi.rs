@@ -4,6 +4,7 @@ use core::ffi::c_char;
 
 mod annotation;
 mod annotation_view;
+mod async_ffi;
 mod cluster_annotation;
 mod configuration;
 mod directions;
@@ -24,6 +25,7 @@ mod user_tracking_button;
 
 pub use annotation::*;
 pub use annotation_view::*;
+pub use async_ffi::*;
 pub use cluster_annotation::*;
 pub use configuration::*;
 pub use directions::*;

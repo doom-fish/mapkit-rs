@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-05-17
+
+### Added — Tier-1 Async API (`async` feature)
+
+New cargo feature `async` exposing executor-agnostic `Future` wrappers around
+MapKit's completion-handler APIs.  Works with any async runtime (Tokio, async-std,
+smol, `pollster`, …).
+
+#### `MKLocalSearch` async
+- `AsyncMKLocalSearch::search(&MKLocalSearchRequest) -> Result<LocalSearchStartFuture>` —
+  wraps `MKLocalSearch.start(completionHandler:)`.
+- `AsyncMKLocalSearch::search_points_of_interest(&MKLocalPointsOfInterestRequest) -> Result<LocalSearchStartFuture>` —
+  companion API for `MKLocalPointsOfInterestRequest`.
+- `AsyncMKLocalSearch::start(MKLocalSearch) -> LocalSearchStartFuture` — lower-level variant
+  accepting a pre-built handle.
+
+#### `MKDirections` async
+- `AsyncMKDirections::calculate(MKDirections) -> DirectionsCalculateFuture` —
+  wraps `MKDirections.calculate(completionHandler:)`.
+- `AsyncMKDirections::calculate_eta(MKDirections) -> DirectionsEtaFuture` —
+  wraps `MKDirections.calculateETA(completionHandler:)`.
+- `AsyncMKDirections::calculate_from_request` / `calculate_eta_from_request` convenience variants.
+
+#### `MKMapSnapshotter` async
+- `AsyncMKMapSnapshotter::start(MKMapSnapshotter) -> SnapshotterStartFuture` —
+  wraps `MKMapSnapshotter.start(completionHandler:)` on a background queue (no main run loop required).
+- `AsyncMKMapSnapshotter::snapshot(&MKMapSnapshotOptions) -> Result<SnapshotterStartFuture>` —
+  convenience variant.
+
+#### `MKGeocodingRequest` async (macOS 26.0+)
+- `AsyncMKGeocodingRequest::get_map_items(MKGeocodingRequest) -> GeocoderFuture` —
+  wraps `MKGeocodingRequest.getMapItems(completionHandler:)`.
+- `AsyncMKGeocodingRequest::geocode(&str) -> Result<GeocoderFuture>` — convenience.
+- Note: `CLGeocoder` (deprecated predecessor) is not wrapped.
+
+#### `MKReverseGeocodingRequest` async (macOS 26.0+)
+- `AsyncMKReverseGeocodingRequest::get_map_items(MKReverseGeocodingRequest) -> ReverseGeocoderFuture`
+- `AsyncMKReverseGeocodingRequest::reverse_geocode(MKCoordinate) -> Result<ReverseGeocoderFuture>`
+
+#### Multi-fire delegate surfaces (Tier 2, deferred)
+`MKLocalSearchCompleter` and `MKMapViewDelegate` use multi-fire delegate patterns
+and are deferred to a Tier-2 Stream rollout.
+
+#### Infrastructure
+- New Swift bridge file `Async.swift` with `@_cdecl` thunks for each API.
+- New `src/async_api.rs` module (behind `#[cfg(feature = "async")]`).
+- `doom-fish-utils` added as a dependency (`AsyncCompletion` / `AsyncCompletionFuture`).
+- `pollster` added as a dev-dependency.
+- 3 new examples: `20_async_local_search`, `21_async_directions`, `22_async_snapshot`.
+- 13 new tests in `tests/async_api_tests.rs` (all non-ignored tests pass).
+
 ## [0.2.3] - 2026-05-17
 
 ### Added

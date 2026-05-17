@@ -179,6 +179,14 @@ impl MKLocalSearch {
     pub fn cancel(&self) {
         unsafe { ffi::mk_local_search_cancel(self.raw.as_ptr()) };
     }
+
+    /// Transfer ownership of the underlying handle to the caller.
+    /// The caller becomes responsible for releasing it.
+    pub(crate) fn into_raw(self) -> *mut c_void {
+        let raw = self.raw.as_ptr();
+        std::mem::forget(self);
+        raw
+    }
 }
 
 impl Drop for MKLocalSearch {
