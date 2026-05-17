@@ -18,21 +18,27 @@ pub mod annotation;
 pub mod annotation_view;
 pub mod cluster_annotation;
 pub mod configuration;
+pub mod controls;
 pub mod directions;
 pub mod distance_formatter;
 pub mod error;
 mod ffi;
 pub mod geocoder;
+pub mod geojson;
 pub mod geometry;
 pub mod local_search;
 pub mod local_search_completer;
 pub mod look_around;
+pub mod look_around_view_controller;
 pub mod map_item;
+pub mod map_item_detail_view_controller;
 pub mod map_view;
+pub mod map_view_delegate;
 pub mod overlay;
 pub mod overlay_renderer;
 pub mod point_of_interest;
 mod private;
+pub mod selection_accessory;
 pub mod services;
 pub mod snapshotter;
 pub mod types;
@@ -43,6 +49,7 @@ pub use address::{
     MKAddressRepresentations, MKAddressRepresentationsContextStyle,
 };
 pub use annotation::{MKMapItemAnnotation, MKPointAnnotation, MKUserLocation};
+pub use controls::{MKCompassButton, MKPitchControl, MKZoomControl};
 pub use annotation_view::{
     MKAnnotation, MKAnnotationView, MKAnnotationViewCollisionMode, MKAnnotationViewDragState,
     MKAnnotationViewZPriority, MKFeatureDisplayPriority, MKMarkerAnnotationView,
@@ -61,11 +68,18 @@ pub use directions::{
 pub use distance_formatter::{
     MKDistanceFormatter, MKDistanceFormatterUnitStyle, MKDistanceFormatterUnits,
 };
-pub use error::{MapKitError, NSErrorInfo};
+pub use error::{mk_error_domain, MapKitError, MKErrorCode, NSErrorInfo};
 pub use geocoder::{MKGeocodingRequest, MKReverseGeocodingRequest};
+pub use geojson::{
+    MKGeoJSONDecoder, MKGeoJSONFeature, MKGeoJSONObject, MKGeoJSONObjectValue,
+    MKGeoJSONMultiPolygon, MKGeoJSONMultiPolyline, MKGeoJSONPointAnnotation,
+    MKGeoJSONPolygon, MKGeoJSONPolyline,
+};
 pub use geometry::{
-    MKCoordinate, MKCoordinateRegion, MKCoordinateSpan, MKMapPoint, MKMapRect, MKMapSize,
-    MKScreenPoint, MKScreenSize,
+    mk_map_points_per_meter_at_latitude, mk_meters_per_map_point_at_latitude,
+    mk_string_from_map_point, mk_string_from_map_rect, mk_string_from_map_size, MKCoordinate,
+    MKCoordinateRegion, MKCoordinateSpan, MKMapPoint, MKMapRect, MKMapRectDivision,
+    MKMapRectEdge, MKMapSize, MKScreenPoint, MKScreenSize,
 };
 pub use local_search::{
     MKLocalSearch, MKLocalSearchRegionPriority, MKLocalSearchRequest, MKLocalSearchResponse,
@@ -79,8 +93,15 @@ pub use look_around::{
     MKLookAroundScene, MKLookAroundSceneRequest, MKLookAroundSnapshot, MKLookAroundSnapshotOptions,
     MKLookAroundSnapshotter,
 };
-pub use map_item::{MKMapItem, MKPlacemark};
+pub use look_around_view_controller::{
+    MKLookAroundBadgePosition, MKLookAroundViewController, MKLookAroundViewControllerDelegate,
+};
+pub use map_item::{MKMapItem, MKMapItemIdentifier, MKMapItemRequest, MKPlacemark};
+pub use map_item_detail_view_controller::{
+    MKMapItemDetailViewController, MKMapItemDetailViewControllerDelegate,
+};
 pub use map_view::{MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode};
+pub use map_view_delegate::MKMapViewDelegate;
 pub use overlay::{
     MKCircle, MKGeodesicPolyline, MKMultiPoint, MKMultiPolygon, MKMultiPolyline, MKOverlay,
     MKOverlayLevel, MKPolygon, MKPolyline, MKShape, MKTileOverlay, MKTileOverlayPath,
@@ -93,6 +114,11 @@ pub use overlay_renderer::{
 pub use point_of_interest::{
     MKLocalPointsOfInterestRequest, MKPointOfInterestCategory, MKPointOfInterestFilter,
     MKPointOfInterestFilterMode,
+};
+pub use selection_accessory::{
+    MKMapItemDetailSelectionAccessoryCalloutStyle,
+    MKMapItemDetailSelectionAccessoryPresentationKind,
+    MKMapItemDetailSelectionAccessoryPresentationStyle, MKSelectionAccessory,
 };
 pub use snapshotter::{MKMapSnapshot, MKMapSnapshotOptions, MKMapSnapshotter};
 pub use user_tracking_button::MKUserTrackingButton;
@@ -109,6 +135,7 @@ pub mod prelude {
         MKAnnotationViewZPriority, MKFeatureDisplayPriority, MKMarkerAnnotationView,
         MKPinAnnotationColor, MKPinAnnotationView, MKUserLocationView,
     };
+    pub use crate::controls::{MKCompassButton, MKPitchControl, MKZoomControl};
     pub use crate::cluster_annotation::MKClusterAnnotation;
     pub use crate::configuration::{
         MKHybridMapConfiguration, MKImageryMapConfiguration, MKMapCamera, MKMapCameraBoundary,
@@ -122,11 +149,18 @@ pub mod prelude {
     pub use crate::distance_formatter::{
         MKDistanceFormatter, MKDistanceFormatterUnitStyle, MKDistanceFormatterUnits,
     };
-    pub use crate::error::{MapKitError, NSErrorInfo};
+    pub use crate::error::{mk_error_domain, MapKitError, MKErrorCode, NSErrorInfo};
     pub use crate::geocoder::{MKGeocodingRequest, MKReverseGeocodingRequest};
+    pub use crate::geojson::{
+        MKGeoJSONDecoder, MKGeoJSONFeature, MKGeoJSONObject, MKGeoJSONObjectValue,
+        MKGeoJSONMultiPolygon, MKGeoJSONMultiPolyline, MKGeoJSONPointAnnotation,
+        MKGeoJSONPolygon, MKGeoJSONPolyline,
+    };
     pub use crate::geometry::{
-        MKCoordinate, MKCoordinateRegion, MKCoordinateSpan, MKMapPoint, MKMapRect, MKMapSize,
-        MKScreenPoint, MKScreenSize,
+        mk_map_points_per_meter_at_latitude, mk_meters_per_map_point_at_latitude,
+        mk_string_from_map_point, mk_string_from_map_rect, mk_string_from_map_size, MKCoordinate,
+        MKCoordinateRegion, MKCoordinateSpan, MKMapPoint, MKMapRect, MKMapRectDivision,
+        MKMapRectEdge, MKMapSize, MKScreenPoint, MKScreenSize,
     };
     pub use crate::local_search::{
         MKLocalSearch, MKLocalSearchRegionPriority, MKLocalSearchRequest, MKLocalSearchResponse,
@@ -140,8 +174,16 @@ pub mod prelude {
         MKLookAroundScene, MKLookAroundSceneRequest, MKLookAroundSnapshot,
         MKLookAroundSnapshotOptions, MKLookAroundSnapshotter,
     };
-    pub use crate::map_item::{MKMapItem, MKPlacemark};
+    pub use crate::look_around_view_controller::{
+        MKLookAroundBadgePosition, MKLookAroundViewController,
+        MKLookAroundViewControllerDelegate,
+    };
+    pub use crate::map_item::{MKMapItem, MKMapItemIdentifier, MKMapItemRequest, MKPlacemark};
+    pub use crate::map_item_detail_view_controller::{
+        MKMapItemDetailViewController, MKMapItemDetailViewControllerDelegate,
+    };
     pub use crate::map_view::{MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode};
+    pub use crate::map_view_delegate::MKMapViewDelegate;
     pub use crate::overlay::{
         MKCircle, MKGeodesicPolyline, MKMultiPoint, MKMultiPolygon, MKMultiPolyline, MKOverlay,
         MKOverlayLevel, MKPolygon, MKPolyline, MKShape, MKTileOverlay, MKTileOverlayPath,
@@ -154,6 +196,11 @@ pub mod prelude {
     pub use crate::point_of_interest::{
         MKLocalPointsOfInterestRequest, MKPointOfInterestCategory, MKPointOfInterestFilter,
         MKPointOfInterestFilterMode,
+    };
+    pub use crate::selection_accessory::{
+        MKMapItemDetailSelectionAccessoryCalloutStyle,
+        MKMapItemDetailSelectionAccessoryPresentationKind,
+        MKMapItemDetailSelectionAccessoryPresentationStyle, MKSelectionAccessory,
     };
     pub use crate::snapshotter::{MKMapSnapshot, MKMapSnapshotOptions, MKMapSnapshotter};
     pub use crate::user_tracking_button::MKUserTrackingButton;

@@ -20,4 +20,36 @@ extern "C" {
         second_map_point_json: *const c_char,
         out_error: *mut *mut c_char,
     ) -> f64;
+    pub fn mk_geometry_constant_json(
+        kind: i32,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_char;
+    pub fn mk_coordinate_region_for_map_rect_json(
+        map_rect_json: *const c_char,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_char;
+    pub fn mk_map_points_per_meter_at_latitude(
+        latitude: f64,
+        out_error: *mut *mut c_char,
+    ) -> f64;
+    pub fn mk_meters_per_map_point_at_latitude(
+        latitude: f64,
+        out_error: *mut *mut c_char,
+    ) -> f64;
+    pub fn mk_map_rect_predicate_json(
+        rect_json: *const c_char,
+        auxiliary_json: *const c_char,
+        kind: i32,
+        out_error: *mut *mut c_char,
+    ) -> bool;
+    pub fn mk_map_rect_transform_json(
+        rect_json: *const c_char,
+        other_rect_json: *const c_char,
+        dx: f64,
+        dy: f64,
+        amount: f64,
+        edge: i32,
+        kind: i32,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_char;
 }

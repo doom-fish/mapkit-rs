@@ -1,10 +1,10 @@
 # mapkit coverage audit (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 243
-VERIFIED: 178
-GAPS: 63
+VERIFIED: 241
+GAPS: 0
 EXEMPT: 2
-COVERAGE_PCT: 73.3%
+COVERAGE_PCT: 100.0%
 
 This audit counts named top-level macOS declarations from MapKit.framework headers (interfaces, protocols, typedefs/enums/structs, exported constants, and top-level functions). Objective-C categories were not counted as standalone symbols.
 
@@ -190,72 +190,72 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKUserLocationView | interface | MKUserLocationView.h | MKUserLocationView (src/annotation_view.rs) |
 | MKZoomScale | typedef | MKGeometry.h | MKZoomScale (src/overlay_renderer.rs) |
 
+| MKCompassButton | interface | MKCompassButton.h | MKCompassButton (src/controls.rs) |
+| MKGeoJSONDecoder | interface | MKGeoJSONSerialization.h | MKGeoJSONDecoder (src/geojson.rs) |
+| MKGeoJSONFeature | interface | MKGeoJSONSerialization.h | MKGeoJSONFeature (src/geojson.rs) |
+| MKGeoJSONObject | protocol | MKGeoJSONSerialization.h | MKGeoJSONObject + MKGeoJSONObjectValue (src/geojson.rs) |
+| MKCoordinateRegionForMapRect | function | MKGeometry.h | MKCoordinateRegion::from_map_rect (src/geometry.rs) |
+| MKMapPointEqualToPoint | function | MKGeometry.h | MKMapPoint::equal_to (src/geometry.rs) |
+| MKMapPointsPerMeterAtLatitude | function | MKGeometry.h | mk_map_points_per_meter_at_latitude (src/geometry.rs) |
+| MKMapRectContainsPoint | function | MKGeometry.h | MKMapRect::contains_point (src/geometry.rs) |
+| MKMapRectContainsRect | function | MKGeometry.h | MKMapRect::contains_rect (src/geometry.rs) |
+| MKMapRectDivide | function | MKGeometry.h | MKMapRect::divide + MKMapRectDivision (src/geometry.rs) |
+| MKMapRectEqualToRect | function | MKGeometry.h | MKMapRect::equal_to (src/geometry.rs) |
+| MKMapRectGetHeight | function | MKGeometry.h | MKMapRect::height (src/geometry.rs) |
+| MKMapRectGetMaxX | function | MKGeometry.h | MKMapRect::max_x (src/geometry.rs) |
+| MKMapRectGetMaxY | function | MKGeometry.h | MKMapRect::max_y (src/geometry.rs) |
+| MKMapRectGetMidX | function | MKGeometry.h | MKMapRect::mid_x (src/geometry.rs) |
+| MKMapRectGetMidY | function | MKGeometry.h | MKMapRect::mid_y (src/geometry.rs) |
+| MKMapRectGetMinX | function | MKGeometry.h | MKMapRect::min_x (src/geometry.rs) |
+| MKMapRectGetMinY | function | MKGeometry.h | MKMapRect::min_y (src/geometry.rs) |
+| MKMapRectGetWidth | function | MKGeometry.h | MKMapRect::width (src/geometry.rs) |
+| MKMapRectInset | function | MKGeometry.h | MKMapRect::inset (src/geometry.rs) |
+| MKMapRectIntersection | function | MKGeometry.h | MKMapRect::intersection (src/geometry.rs) |
+| MKMapRectIntersectsRect | function | MKGeometry.h | MKMapRect::intersects_rect (src/geometry.rs) |
+| MKMapRectIsEmpty | function | MKGeometry.h | MKMapRect::is_empty (src/geometry.rs) |
+| MKMapRectIsNull | function | MKGeometry.h | MKMapRect::is_null (src/geometry.rs) |
+| MKMapRectNull | constant | MKGeometry.h | MKMapRect::null (src/geometry.rs) |
+| MKMapRectOffset | function | MKGeometry.h | MKMapRect::offset (src/geometry.rs) |
+| MKMapRectRemainder | function | MKGeometry.h | MKMapRect::remainder (src/geometry.rs) |
+| MKMapRectSpans180thMeridian | function | MKGeometry.h | MKMapRect::spans_180th_meridian (src/geometry.rs) |
+| MKMapRectUnion | function | MKGeometry.h | MKMapRect::union (src/geometry.rs) |
+| MKMapRectWorld | constant | MKGeometry.h | MKMapRect::world (src/geometry.rs) |
+| MKMapSizeEqualToSize | function | MKGeometry.h | MKMapSize::equal_to (src/geometry.rs) |
+| MKMapSizeWorld | constant | MKGeometry.h | MKMapSize::world (src/geometry.rs) |
+| MKMetersPerMapPointAtLatitude | function | MKGeometry.h | mk_meters_per_map_point_at_latitude (src/geometry.rs) |
+| MKStringFromMapPoint | function | MKGeometry.h | mk_string_from_map_point / MKMapPoint::string_representation (src/geometry.rs) |
+| MKStringFromMapRect | function | MKGeometry.h | mk_string_from_map_rect / MKMapRect::string_representation (src/geometry.rs) |
+| MKStringFromMapSize | function | MKGeometry.h | mk_string_from_map_size / MKMapSize::string_representation (src/geometry.rs) |
+| MKLookAroundBadgePosition | enum | MKLookAroundViewController.h | MKLookAroundBadgePosition (src/look_around_view_controller.rs) |
+| MKLookAroundViewController | interface | MKLookAroundViewController.h | MKLookAroundViewController (src/look_around_view_controller.rs) |
+| MKLookAroundViewControllerDelegate | protocol | MKLookAroundViewController.h | MKLookAroundViewControllerDelegate (src/look_around_view_controller.rs) |
+| MKLaunchOptionsCameraKey | constant | MKMapItem.h | MKMapItem::launch_options_camera_key (src/map_item.rs) |
+| MKLaunchOptionsDirectionsModeCycling | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_cycling (src/map_item.rs) |
+| MKLaunchOptionsDirectionsModeDefault | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_default (src/map_item.rs) |
+| MKLaunchOptionsDirectionsModeDriving | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_driving (src/map_item.rs) |
+| MKLaunchOptionsDirectionsModeKey | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_key (src/map_item.rs) |
+| MKLaunchOptionsDirectionsModeTransit | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_transit (src/map_item.rs) |
+| MKLaunchOptionsDirectionsModeWalking | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_walking (src/map_item.rs) |
+| MKLaunchOptionsMapCenterKey | constant | MKMapItem.h | MKMapItem::launch_options_map_center_key (src/map_item.rs) |
+| MKLaunchOptionsMapSpanKey | constant | MKMapItem.h | MKMapItem::launch_options_map_span_key (src/map_item.rs) |
+| MKLaunchOptionsMapTypeKey | constant | MKMapItem.h | MKMapItem::launch_options_map_type_key (src/map_item.rs) |
+| MKLaunchOptionsShowsTrafficKey | constant | MKMapItem.h | MKMapItem::launch_options_shows_traffic_key (src/map_item.rs) |
+| MKMapItemTypeIdentifier | constant | MKMapItem.h | MKMapItem::type_identifier (src/map_item.rs) |
+| MKMapItemDetailViewController | interface | MKMapItemDetailViewController.h | MKMapItemDetailViewController (src/map_item_detail_view_controller.rs) |
+| MKMapItemDetailViewControllerDelegate | protocol | MKMapItemDetailViewController.h | MKMapItemDetailViewControllerDelegate (src/map_item_detail_view_controller.rs) |
+| MKMapItemIdentifier | interface | MKMapItemIdentifier.h | MKMapItemIdentifier (src/map_item.rs) |
+| MKMapItemRequest | interface | MKMapItemRequest.h | MKMapItemRequest (src/map_item.rs) |
+| MKMapViewDelegate | protocol | MKMapView.h | MKMapViewDelegate (src/map_view_delegate.rs) |
+| MKPitchControl | interface | MKPitchControl.h | MKPitchControl (src/controls.rs) |
+| MKMapItemDetailSelectionAccessoryCalloutStyle | enum | MKSelectionAccessory.h | MKMapItemDetailSelectionAccessoryCalloutStyle (src/selection_accessory.rs) |
+| MKMapItemDetailSelectionAccessoryPresentationStyle | interface | MKSelectionAccessory.h | MKMapItemDetailSelectionAccessoryPresentationStyle (src/selection_accessory.rs) |
+| MKSelectionAccessory | interface | MKSelectionAccessory.h | MKSelectionAccessory (src/selection_accessory.rs) |
+| MKErrorCode | enum | MKTypes.h | MKErrorCode (src/error.rs) |
+| MKErrorDomain | constant | MKTypes.h | mk_error_domain() (src/error.rs) |
+| MKZoomControl | interface | MKZoomControl.h | MKZoomControl (src/controls.rs) |
+
 ## 🔴 GAPS
-| Symbol | Kind | Header | Notes |
-| --- | --- | --- | --- |
-| MKCompassButton | interface | MKCompassButton.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKGeoJSONDecoder | interface | MKGeoJSONSerialization.h | GeoJSON decoding APIs are not wrapped. |
-| MKGeoJSONFeature | interface | MKGeoJSONSerialization.h | GeoJSON decoding APIs are not wrapped. |
-| MKGeoJSONObject | protocol | MKGeoJSONSerialization.h | GeoJSON decoding APIs are not wrapped. |
-| MKCoordinateRegionForMapRect | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapPointEqualToPoint | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapPointsPerMeterAtLatitude | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectContainsPoint | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectContainsRect | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectDivide | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectEqualToRect | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetHeight | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetMaxX | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetMaxY | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetMidX | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetMidY | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetMinX | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetMinY | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectGetWidth | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectInset | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectIntersection | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectIntersectsRect | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectIsEmpty | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectIsNull | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectNull | constant | MKGeometry.h | Global geometry constants are not surfaced by the crate. |
-| MKMapRectOffset | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectRemainder | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectSpans180thMeridian | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectUnion | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapRectWorld | constant | MKGeometry.h | Global geometry constants are not surfaced by the crate. |
-| MKMapSizeEqualToSize | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKMapSizeWorld | constant | MKGeometry.h | Global geometry constants are not surfaced by the crate. |
-| MKMetersPerMapPointAtLatitude | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKStringFromMapPoint | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKStringFromMapRect | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKStringFromMapSize | function | MKGeometry.h | No equivalent Rust geometry helper is currently exposed. |
-| MKLookAroundBadgePosition | enum | MKLookAroundViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKLookAroundViewController | interface | MKLookAroundViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKLookAroundViewControllerDelegate | protocol | MKLookAroundViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKLaunchOptionsCameraKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsDirectionsModeCycling | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsDirectionsModeDefault | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsDirectionsModeDriving | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsDirectionsModeKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsDirectionsModeTransit | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsDirectionsModeWalking | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsMapCenterKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsMapSpanKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsMapTypeKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKLaunchOptionsShowsTrafficKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKMapItemTypeIdentifier | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKMapItemDetailViewController | interface | MKMapItemDetailViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKMapItemDetailViewControllerDelegate | protocol | MKMapItemDetailViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKMapItemIdentifier | interface | MKMapItemIdentifier.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKMapItemRequest | interface | MKMapItemRequest.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKMapViewDelegate | protocol | MKMapView.h | Delegate callbacks are not surfaced as Rust traits. |
-| MKPitchControl | interface | MKPitchControl.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKMapItemDetailSelectionAccessoryCalloutStyle | enum | MKSelectionAccessory.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKMapItemDetailSelectionAccessoryPresentationStyle | interface | MKSelectionAccessory.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKSelectionAccessory | interface | MKSelectionAccessory.h | UI/delegate/AppKit surface is not wrapped by the crate. |
-| MKErrorCode | enum | MKTypes.h | Errors are surfaced as generic NSErrorInfo rather than the MKErrorCode enum. |
-| MKErrorDomain | constant | MKTypes.h | Errors are surfaced as generic NSErrorInfo rather than the MKErrorDomain export. |
-| MKZoomControl | interface | MKZoomControl.h | UI/delegate/AppKit surface is not wrapped by the crate. |
+_None._
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |

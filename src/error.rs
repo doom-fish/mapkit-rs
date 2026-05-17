@@ -5,11 +5,56 @@ use serde::{Deserialize, Serialize};
 
 use crate::ffi;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MKErrorCode {
+    Unknown = 1,
+    ServerFailure = 2,
+    LoadingThrottled = 3,
+    PlacemarkNotFound = 4,
+    DirectionsNotFound = 5,
+    DecodingFailed = 6,
+}
+
+impl MKErrorCode {
+    pub const fn from_raw(value: i64) -> Option<Self> {
+        match value {
+            1 => Some(Self::Unknown),
+            2 => Some(Self::ServerFailure),
+            3 => Some(Self::LoadingThrottled),
+            4 => Some(Self::PlacemarkNotFound),
+            5 => Some(Self::DirectionsNotFound),
+            6 => Some(Self::DecodingFailed),
+            _ => None,
+        }
+    }
+
+    pub const fn as_raw(self) -> i64 {
+        self as i64
+    }
+}
+
+pub const fn mk_error_domain() -> &'static str {
+    "MKErrorDomain"
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NSErrorInfo {
     pub domain: String,
     pub code: i64,
     pub message: String,
+}
+
+impl NSErrorInfo {
+    pub fn is_mapkit_domain(&self) -> bool {
+        self.domain == mk_error_domain()
+    }
+
+    pub fn mapkit_error_code(&self) -> Option<MKErrorCode> {
+        self.is_mapkit_domain()
+            .then(|| MKErrorCode::from_raw(self.code))
+            .flatten()
+    }
 }
 
 impl fmt::Display for NSErrorInfo {
@@ -39,6 +84,13 @@ impl fmt::Display for MapKitError {
 impl std::error::Error for MapKitError {}
 
 impl MapKitError {
+    pub fn mapkit_error_code(&self) -> Option<MKErrorCode> {
+        match self {
+            Self::Framework(error) => error.mapkit_error_code(),
+            Self::InvalidArgument(_) | Self::OperationFailed(_) => None,
+        }
+    }
+
     pub(crate) unsafe fn from_error_ptr(
         error_ptr: *mut core::ffi::c_char,
         fallback: &str,

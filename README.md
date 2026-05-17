@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS.
 
-> **Status:** v0.2.2 covers the requested MapKit areas for headless macOS workflows: `MKMapView`, annotation models/views (including `MKMapItemAnnotation`, `MKUserLocation`, `MKPinAnnotationView`, and `MKUserLocationView`), overlay models/renderers (including `MKMultiPolyline` / `MKMultiPolygon` families), camera/configuration, local search + completer, directions, snapshotters, geocoding, Look Around, full point-of-interest filters/constants, addresses, map items, cluster annotations, and user-tracking button visibility.
+> **Status:** v0.2.3 reaches 100% audited coverage for the non-exempt macOS 26.2 MapKit SDK surface, including headless-safe wrappers for geometry helpers, GeoJSON decoding, map-item launch/request extras, error constants, and Rust-modeled control/controller/delegate APIs alongside the existing map/search/directions/rendering surfaces.
 
 ## Quick start
 
@@ -32,7 +32,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - `MKMapSnapshotter` and `MKLookAroundSnapshotter` wrappers for headless image generation
 - `MKGeocodingRequest` and `MKReverseGeocodingRequest` on macOS 26+
 - `MKPointOfInterestFilter`, `MKLocalPointsOfInterestRequest`, the full `MKPointOfInterestCategory` convenience set, `MKAddress`, and `MKAddressFilter`
-- `MKMapItem` / `MKPlacemark` data models that round-trip through the Swift bridge
+- `MKMapItem` / `MKPlacemark` data models, launch-option constants, `MKMapItemIdentifier`, `MKMapItemRequest`, and `MKErrorCode` / `MKErrorDomain` helpers
+- `MKGeoJSONDecoder` plus the full audited `MKGeometry.h` helper surface, and headless-safe Rust models/traits for map controls, selection accessories, map-item detail / Look Around controllers, and `MKMapViewDelegate`
 
 ## Examples
 
@@ -57,7 +58,7 @@ Expected success footer from the smoke example:
 - The examples are designed to exit successfully on a headless macOS host.
 - Some UI-heavy integration tests are `#[ignore]` under `cargo test` because MapKit view/rendering objects require a dedicated main-thread process; the matching numbered examples exercise those APIs directly.
 - `MKUserTrackingButton` is not exposed as a standalone native macOS class in the SDK, so this crate wraps the equivalent `MKMapView.showsUserTrackingButton` / `userTrackingMode` functionality instead.
-- `COVERAGE.md` contains the SDK audit and the skip/defer rationale for UI- or launcher-oriented APIs that are intentionally not exercised from tests.
+- `COVERAGE.md` and `COVERAGE_AUDIT.md` document the 100% audited surface, the headless-safe modeling notes for UI/controller APIs, and the two exempt SDK declarations.
 
 ## License
 

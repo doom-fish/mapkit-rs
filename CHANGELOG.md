@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-05-17
+
+### Added
+
+- GeoJSON decoding support via `MKGeoJSONDecoder`, `MKGeoJSONFeature`, `MKGeoJSONObject`, and typed geometry payloads.
+- The remaining `MKGeometry.h` helpers/constants, including map-rect predicates/transforms, world/null constants, and string/meters conversions.
+- `MKMapItemIdentifier`, `MKMapItemRequest`, MapKit launch-option constants, and typed `MKErrorCode` / `MKErrorDomain` helpers.
+- Headless-safe Rust models/traits for `MKCompassButton`, `MKPitchControl`, `MKZoomControl`, `MKSelectionAccessory`, `MKMapItemDetailViewController`, `MKLookAroundViewController`, and `MKMapViewDelegate`.
+- Smoke tests covering the new geometry, GeoJSON, map-item/error, and UI-surface APIs.
+
+### Changed
+
+- `COVERAGE_AUDIT.md` now verifies all 241 non-exempt public macOS 26.2 MapKit symbols (100% audited coverage, 0 remaining gaps).
+- README and coverage documentation now describe the expanded headless-safe control/controller/delegate modeling.
+
 ## [0.2.2] - 2026-05-17
 
 - Added `MKMapItemAnnotation`, `MKUserLocation`, `MKPinAnnotationView`, and `MKUserLocationView` wrappers for the remaining annotation-model/view gaps in the requested scope.
