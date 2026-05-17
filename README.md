@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Async API
 
-Enable the `async` Cargo feature for executor-agnostic [`Future`] wrappers
+Enable the `async` Cargo feature for executor-agnostic [`Future`][std::future::Future] wrappers
 around MapKit's completion-handler APIs (works with Tokio, async-std, smol,
 pollster, …):
 

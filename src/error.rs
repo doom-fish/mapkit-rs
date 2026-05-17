@@ -91,6 +91,14 @@ impl MapKitError {
         }
     }
 
+    /// Build a [`MapKitError`] from a nullable C string error pointer produced
+    /// by a Swift bridge thunk and free the string.
+    ///
+    /// # Safety
+    ///
+    /// `error_ptr` must be either null or a valid, non-aliased, nul-terminated
+    /// C string allocated by the Swift bridge.  The string is freed after this
+    /// call; the caller must not use `error_ptr` again.
     pub(crate) unsafe fn from_error_ptr(
         error_ptr: *mut core::ffi::c_char,
         fallback: &str,

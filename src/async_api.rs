@@ -53,6 +53,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use doom_fish_utils::completion::{error_from_cstr, AsyncCompletion, AsyncCompletionFuture};
+use doom_fish_utils::panic_safe::catch_user_panic;
 
 use crate::directions::{MKDirections, MKDirectionsRequest, MKDirectionsResponse, MKETAResponse};
 use crate::error::MapKitError;
@@ -74,50 +75,74 @@ use crate::{ffi, MKCoordinate};
 // ============================================================================
 
 struct OwnedLocalSearch(*mut c_void);
+// SAFETY: `MKLocalSearch` is a MapKit service object. MapKit service objects
+// are reference-counted Obj-C values with no thread-affinity requirements;
+// they may be released from any thread, which is all `Send` requires here.
 unsafe impl Send for OwnedLocalSearch {}
 impl Drop for OwnedLocalSearch {
     fn drop(&mut self) {
         if !self.0.is_null() {
+            // SAFETY: `self.0` is a retained `MKLocalSearch` handle obtained
+            // from `mk_local_search_new` / `into_raw` and not yet released.
             unsafe { ffi::mk_local_search_release(self.0) }
         }
     }
 }
 
 struct OwnedDirections(*mut c_void);
+// SAFETY: `MKDirections` is a MapKit service object with no thread-affinity
+// requirements; it may be sent across threads and released from any thread.
 unsafe impl Send for OwnedDirections {}
 impl Drop for OwnedDirections {
     fn drop(&mut self) {
         if !self.0.is_null() {
+            // SAFETY: `self.0` is a retained `MKDirections` handle obtained
+            // from `mk_directions_new` / `into_raw` and not yet released.
             unsafe { ffi::mk_directions_release(self.0) }
         }
     }
 }
 
 struct OwnedSnapshotter(*mut c_void);
+// SAFETY: `MKMapSnapshotter` is a MapKit service object with no thread-affinity
+// requirements; it may be sent across threads and released from any thread.
 unsafe impl Send for OwnedSnapshotter {}
 impl Drop for OwnedSnapshotter {
     fn drop(&mut self) {
         if !self.0.is_null() {
+            // SAFETY: `self.0` is a retained `MKMapSnapshotter` handle obtained
+            // from `mk_map_snapshotter_new` / `into_raw` and not yet released.
             unsafe { ffi::mk_map_snapshotter_release(self.0) }
         }
     }
 }
 
 struct OwnedGeocodingRequest(*mut c_void);
+// SAFETY: `MKGeocodingRequest` is a MapKit service object with no thread-affinity
+// requirements; it may be sent across threads and released from any thread.
 unsafe impl Send for OwnedGeocodingRequest {}
 impl Drop for OwnedGeocodingRequest {
     fn drop(&mut self) {
         if !self.0.is_null() {
+            // SAFETY: `self.0` is a retained `MKGeocodingRequest` handle
+            // obtained from `mk_geocoding_request_new` / `into_raw` and not
+            // yet released.
             unsafe { ffi::mk_geocoding_request_release(self.0) }
         }
     }
 }
 
 struct OwnedReverseGeocodingRequest(*mut c_void);
+// SAFETY: `MKReverseGeocodingRequest` is a MapKit service object with no
+// thread-affinity requirements; it may be sent across threads and released
+// from any thread.
 unsafe impl Send for OwnedReverseGeocodingRequest {}
 impl Drop for OwnedReverseGeocodingRequest {
     fn drop(&mut self) {
         if !self.0.is_null() {
+            // SAFETY: `self.0` is a retained `MKReverseGeocodingRequest`
+            // handle obtained from `mk_reverse_geocoding_request_new` /
+            // `into_raw` and not yet released.
             unsafe { ffi::mk_reverse_geocoding_request_release(self.0) }
         }
     }
@@ -125,6 +150,10 @@ impl Drop for OwnedReverseGeocodingRequest {
 
 /// Retained raw pointer returned by the snapshot callback.
 struct RawSendPtr(*mut c_void);
+// SAFETY: The pointer is a retained `MKMapSnapshot` handle.  `MKMapSnapshot`
+// is an immutable value object (it wraps a rendered image); it has no
+// thread-affinity and is safe to transfer to another thread for release /
+// inspection.
 unsafe impl Send for RawSendPtr {}
 
 // ============================================================================
@@ -137,15 +166,27 @@ extern "C" fn json_completion_cb(
     error: *const c_char,
     ctx: *mut c_void,
 ) {
-    if !error.is_null() {
-        let msg = unsafe { error_from_cstr(error) };
-        unsafe { AsyncCompletion::<String>::complete_err(ctx, msg) };
-    } else if !json.is_null() {
-        let s = unsafe { CStr::from_ptr(json).to_string_lossy().into_owned() };
-        unsafe { AsyncCompletion::complete_ok(ctx, s) };
-    } else {
-        unsafe { AsyncCompletion::<String>::complete_err(ctx, "empty async result".to_string()) };
-    }
+    catch_user_panic("mapkit::async_api::json_completion_cb", || {
+        if !error.is_null() {
+            // SAFETY: `error` is a non-null C string produced by the Swift
+            // bridge; it is valid for the duration of this callback.
+            let msg = unsafe { error_from_cstr(error) };
+            // SAFETY: `ctx` is the `SyncCompletionPtr` produced by
+            // `AsyncCompletion::create()` and has not yet been completed.
+            unsafe { AsyncCompletion::<String>::complete_err(ctx, msg) };
+        } else if !json.is_null() {
+            // SAFETY: `json` is a non-null C string produced by the Swift
+            // bridge; it is valid for the duration of this callback.
+            let s = unsafe { CStr::from_ptr(json).to_string_lossy().into_owned() };
+            // SAFETY: same as the `complete_err` call above.
+            unsafe { AsyncCompletion::complete_ok(ctx, s) };
+        } else {
+            // SAFETY: same as the `complete_err` call above.
+            unsafe {
+                AsyncCompletion::<String>::complete_err(ctx, "empty async result".to_string());
+            };
+        }
+    });
 }
 
 /// C callback for the snapshot async function (T = RawSendPtr).
@@ -154,19 +195,27 @@ extern "C" fn snapshot_handle_cb(
     error: *const c_char,
     ctx: *mut c_void,
 ) {
-    if !error.is_null() {
-        let msg = unsafe { error_from_cstr(error) };
-        unsafe { AsyncCompletion::<RawSendPtr>::complete_err(ctx, msg) };
-    } else if !handle.is_null() {
-        unsafe { AsyncCompletion::complete_ok(ctx, RawSendPtr(handle)) };
-    } else {
-        unsafe {
-            AsyncCompletion::<RawSendPtr>::complete_err(
-                ctx,
-                "null snapshot handle from Swift".to_string(),
-            );
+    catch_user_panic("mapkit::async_api::snapshot_handle_cb", || {
+        if !error.is_null() {
+            // SAFETY: `error` is a non-null C string produced by the Swift
+            // bridge; it is valid for the duration of this callback.
+            let msg = unsafe { error_from_cstr(error) };
+            // SAFETY: `ctx` is the `SyncCompletionPtr` produced by
+            // `AsyncCompletion::create()` and has not yet been completed.
+            unsafe { AsyncCompletion::<RawSendPtr>::complete_err(ctx, msg) };
+        } else if !handle.is_null() {
+            // SAFETY: same as the `complete_err` call above.
+            unsafe { AsyncCompletion::complete_ok(ctx, RawSendPtr(handle)) };
+        } else {
+            // SAFETY: same as the `complete_err` call above.
+            unsafe {
+                AsyncCompletion::<RawSendPtr>::complete_err(
+                    ctx,
+                    "null snapshot handle from Swift".to_string(),
+                );
+            }
         }
-    }
+    });
 }
 
 // ============================================================================

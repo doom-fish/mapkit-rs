@@ -128,6 +128,13 @@ pub struct MKMapSnapshot {
 }
 
 impl MKMapSnapshot {
+    /// Wrap a retained `MKMapSnapshot` handle produced by the Swift bridge.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must be either null or a valid, retained `MKMapSnapshot` handle.
+    /// Ownership is transferred to the returned `MKMapSnapshot`, which will
+    /// release it on drop.
     pub(crate) unsafe fn from_raw_ptr(ptr: *mut c_void) -> Option<Self> {
         NonNull::new(ptr).map(|raw| Self { raw })
     }

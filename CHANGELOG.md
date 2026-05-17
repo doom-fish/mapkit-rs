@@ -2,7 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.1] - 2026-05-18
+## [0.3.2] - 2026-05-18
+
+### Changed — quality pass (async / unsafe / hygiene)
+
+- **async_api.rs**: wrapped `json_completion_cb` and `snapshot_handle_cb`
+  with `doom_fish_utils::panic_safe::catch_user_panic`.  Previously a panic
+  inside either callback would unwind across the Swift→Rust FFI boundary,
+  which is undefined behaviour.
+- **async_api.rs**: added `// SAFETY:` comments to all five `unsafe impl Send`
+  blocks (`OwnedLocalSearch`, `OwnedDirections`, `OwnedSnapshotter`,
+  `OwnedGeocodingRequest`, `OwnedReverseGeocodingRequest`) and to
+  `unsafe impl Send for RawSendPtr`, documenting the thread-safety rationale
+  for each MapKit service object.
+- **async_api.rs**: added `// SAFETY:` comments to every `unsafe { }` block
+  inside the two C callbacks.
+- **private.rs**: added `# Safety` doc sections to the three `pub unsafe fn`
+  helpers (`take_string`, `parse_json_ptr`, `unit_result`).
+- **error.rs**: added `# Safety` doc section to `MapKitError::from_error_ptr`.
+- **snapshotter.rs**: added `# Safety` doc section to
+  `MKMapSnapshot::from_raw_ptr`.
+- **Cargo.toml**: tightened the `doom-fish-utils` version range from `"0.1"`
+  to `">=0.1, <0.3"` to give room for the next minor bump while keeping the
+  constraint explicit.
+- **README.md**: fixed broken intra-doc link `` [`Future`] `` →
+  `` [`Future`][std::future::Future] `` (was generating a `rustdoc` warning
+  on every `cargo doc` run).
+
+
 
 ### Changed — `@available` guard sweep (macOS 26.0+)
 
