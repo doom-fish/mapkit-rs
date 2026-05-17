@@ -35,6 +35,28 @@ extern "C" {
     pub fn mk_polygon_state_json(polygon: *mut c_void, out_error: *mut *mut c_char) -> *mut c_char;
     pub fn mk_polygon_release(polygon: *mut c_void);
 
+    pub fn mk_multi_polyline_new(
+        polylines: *const *mut c_void,
+        count: usize,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_void;
+    pub fn mk_multi_polyline_state_json(
+        overlay: *mut c_void,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_char;
+    pub fn mk_multi_polyline_release(overlay: *mut c_void);
+
+    pub fn mk_multi_polygon_new(
+        polygons: *const *mut c_void,
+        count: usize,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_void;
+    pub fn mk_multi_polygon_state_json(
+        overlay: *mut c_void,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_char;
+    pub fn mk_multi_polygon_release(overlay: *mut c_void);
+
     pub fn mk_tile_overlay_new(
         url_template: *const c_char,
         out_error: *mut *mut c_char,

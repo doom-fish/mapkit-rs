@@ -1,6 +1,18 @@
 use mapkit::prelude::*;
 
 #[test]
+fn map_view_default_reuse_identifiers_exist() {
+    assert!(!MKMapView::default_annotation_view_reuse_identifier()
+        .unwrap()
+        .is_empty());
+    assert!(
+        !MKMapView::default_cluster_annotation_view_reuse_identifier()
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
 #[ignore = "requires a dedicated main-thread process"]
 fn map_view_round_trip() {
     let map_view = MKMapView::new(MKScreenSize::new(320.0, 200.0)).unwrap();
@@ -15,9 +27,14 @@ fn map_view_round_trip() {
 
     map_view.set_region(region, false).unwrap();
     map_view.set_camera(camera, false).unwrap();
-    map_view.set_camera_zoom_range(Some(zoom_range), false).unwrap();
     map_view
-        .set_camera_boundary(Some(MKMapCameraBoundary::from_region(region).unwrap()), false)
+        .set_camera_zoom_range(Some(zoom_range), false)
+        .unwrap();
+    map_view
+        .set_camera_boundary(
+            Some(MKMapCameraBoundary::from_region(region).unwrap()),
+            false,
+        )
         .unwrap();
     map_view.set_preferred_configuration(configuration).unwrap();
 

@@ -701,3 +701,43 @@ public func mk_tile_overlay_renderer_release(_ renderer: UnsafeMutableRawPointer
     guard let renderer else { return }
     mkrRelease(renderer)
 }
+
+@_cdecl("mk_multi_polyline_renderer_new")
+public func mk_multi_polyline_renderer_new(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKMultiPolyline")
+        return nil
+    }
+
+    do {
+        let multiPolyline = mkrBorrow(overlay, as: MKMultiPolyline.self)
+        let renderer = try mkrSyncOnMain { MKMultiPolylineRenderer(multiPolyline: multiPolyline) }
+        return mkrRetain(renderer)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_multi_polygon_renderer_new")
+public func mk_multi_polygon_renderer_new(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKMultiPolygon")
+        return nil
+    }
+
+    do {
+        let multiPolygon = mkrBorrow(overlay, as: MKMultiPolygon.self)
+        let renderer = try mkrSyncOnMain { MKMultiPolygonRenderer(multiPolygon: multiPolygon) }
+        return mkrRetain(renderer)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}

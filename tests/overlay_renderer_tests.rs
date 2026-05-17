@@ -27,20 +27,36 @@ fn overlay_renderers_build() {
         MKCoordinate::new(40.6892, -74.0445),
     ])
     .unwrap();
-    let tile_overlay = MKTileOverlay::new(Some("https://tiles.example.com/{z}/{x}/{y}.png")).unwrap();
+    let tile_overlay =
+        MKTileOverlay::new(Some("https://tiles.example.com/{z}/{x}/{y}.png")).unwrap();
 
     let overlay_renderer = MKOverlayRenderer::new(&circle).unwrap();
     let path_renderer = MKOverlayPathRenderer::new(&polyline).unwrap();
     let circle_renderer = MKCircleRenderer::new(&circle).unwrap();
     let polyline_renderer = MKPolylineRenderer::new(&polyline).unwrap();
     let gradient_renderer = MKGradientPolylineRenderer::new(&polyline).unwrap();
+    let second_polyline = MKPolyline::new(&[
+        MKCoordinate::new(37.3360, -122.0110),
+        MKCoordinate::new(37.3370, -122.0120),
+    ])
+    .unwrap();
+    let multi_polyline = MKMultiPolyline::new(&[&polyline, &second_polyline]).unwrap();
     let polygon = MKPolygon::new(&[
         MKCoordinate::new(37.3349, -122.0090),
         MKCoordinate::new(37.3349, -122.0000),
         MKCoordinate::new(37.3400, -122.0050),
     ])
     .unwrap();
+    let second_polygon = MKPolygon::new(&[
+        MKCoordinate::new(37.3410, -122.0080),
+        MKCoordinate::new(37.3410, -122.0020),
+        MKCoordinate::new(37.3450, -122.0050),
+    ])
+    .unwrap();
+    let multi_polygon = MKMultiPolygon::new(&[&polygon, &second_polygon]).unwrap();
     let polygon_renderer = MKPolygonRenderer::new(&polygon).unwrap();
+    let multi_polyline_renderer = MKMultiPolylineRenderer::new(&multi_polyline).unwrap();
+    let multi_polygon_renderer = MKMultiPolygonRenderer::new(&multi_polygon).unwrap();
     let tile_renderer = MKTileOverlayRenderer::new(&tile_overlay).unwrap();
 
     path_renderer.set_line_width(3.0).unwrap();
@@ -48,6 +64,8 @@ fn overlay_renderers_build() {
     polyline_renderer.set_stroke_end(0.9).unwrap();
     gradient_renderer.set_stroke_end(0.8).unwrap();
     polygon_renderer.set_stroke_start(0.2).unwrap();
+    multi_polyline_renderer.set_line_width(4.0).unwrap();
+    multi_polygon_renderer.set_line_dash_phase(1.0).unwrap();
     tile_renderer.reload_data().unwrap();
 
     let tile_url = tile_overlay
@@ -61,5 +79,7 @@ fn overlay_renderers_build() {
 
     assert!(overlay_renderer.content_scale_factor().unwrap() >= 1.0);
     assert_eq!(geodesic.point_count().unwrap(), 2);
+    assert_eq!(multi_polyline.polyline_count().unwrap(), 2);
+    assert_eq!(multi_polygon.polygon_count().unwrap(), 2);
     assert!(tile_url.unwrap().contains("/3/1/2"));
 }

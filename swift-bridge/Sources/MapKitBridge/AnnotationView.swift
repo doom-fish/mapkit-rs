@@ -87,6 +87,23 @@ struct MKRMarkerAnnotationViewOptionsPayload: Codable {
     var animatesWhenAdded: Bool?
 }
 
+enum MKRPinAnnotationColorPayload: String, Codable {
+    case red
+    case green
+    case purple
+}
+
+struct MKRPinAnnotationViewStatePayload: Codable {
+    var base: MKRAnnotationViewStatePayload
+    var animatesDrop: Bool
+    var pinColor: MKRPinAnnotationColorPayload
+}
+
+struct MKRPinAnnotationViewOptionsPayload: Codable {
+    var animatesDrop: Bool?
+    var pinColor: MKRPinAnnotationColorPayload?
+}
+
 private func mkrAnnotationViewDragState(
     from payload: MKRAnnotationViewDragStatePayload
 ) -> MKAnnotationView.DragState {
@@ -130,6 +147,23 @@ private func mkrEncodeAnnotationViewCollisionMode(
     case .circle: return .circle
     case .none: return .none
     @unknown default: return .rectangle
+    }
+}
+
+private func mkrPinAnnotationColor(from payload: MKRPinAnnotationColorPayload) -> MKPinAnnotationColor {
+    switch payload {
+    case .red: return .red
+    case .green: return .green
+    case .purple: return .purple
+    }
+}
+
+private func mkrEncodePinAnnotationColor(_ color: MKPinAnnotationColor) -> MKRPinAnnotationColorPayload {
+    switch color {
+    case .red: return .red
+    case .green: return .green
+    case .purple: return .purple
+    @unknown default: return .red
     }
 }
 
@@ -402,6 +436,111 @@ public func mk_marker_annotation_view_apply_options_json(
 
 @_cdecl("mk_marker_annotation_view_release")
 public func mk_marker_annotation_view_release(_ annotationView: UnsafeMutableRawPointer?) {
+    guard let annotationView else { return }
+    mkrRelease(annotationView)
+}
+
+@_cdecl("mk_pin_annotation_view_new")
+public func mk_pin_annotation_view_new(
+    _ annotation: UnsafeMutableRawPointer?,
+    _ reuseIdentifier: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    do {
+        let view = try mkrSyncOnMain {
+            MKPinAnnotationView(
+                annotation: try mkrBorrowAnnotation(annotation),
+                reuseIdentifier: reuseIdentifier.map(String.init(cString:))
+            )
+        }
+        return mkrRetain(view)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_pin_annotation_view_state_json")
+public func mk_pin_annotation_view_state_json(
+    _ annotationView: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let annotationView else {
+        mkrSetMessageError(outError, message: "missing MKPinAnnotationView")
+        return nil
+    }
+
+    do {
+        let view = mkrBorrow(annotationView, as: MKPinAnnotationView.self)
+        let payload = try mkrSyncOnMain {
+            MKRPinAnnotationViewStatePayload(
+                base: mkrEncodeAnnotationViewState(view),
+                animatesDrop: view.animatesDrop,
+                pinColor: mkrEncodePinAnnotationColor(view.pinColor)
+            )
+        }
+        return mkrCString(try mkrEncodeJSON(payload))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_pin_annotation_view_apply_options_json")
+public func mk_pin_annotation_view_apply_options_json(
+    _ annotationView: UnsafeMutableRawPointer?,
+    _ payloadJSON: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) {
+    guard let annotationView else {
+        mkrSetMessageError(outError, message: "missing MKPinAnnotationView")
+        return
+    }
+
+    do {
+        let view = mkrBorrow(annotationView, as: MKPinAnnotationView.self)
+        let payload = try mkrDecodeJSON(payloadJSON, as: MKRPinAnnotationViewOptionsPayload.self)
+        try mkrSyncOnMain {
+            if let animatesDrop = payload.animatesDrop {
+                view.animatesDrop = animatesDrop
+            }
+            if let pinColor = payload.pinColor {
+                view.pinColor = mkrPinAnnotationColor(from: pinColor)
+            }
+        }
+    } catch {
+        mkrSetError(outError, error)
+    }
+}
+
+@_cdecl("mk_pin_annotation_view_release")
+public func mk_pin_annotation_view_release(_ annotationView: UnsafeMutableRawPointer?) {
+    guard let annotationView else { return }
+    mkrRelease(annotationView)
+}
+
+@_cdecl("mk_user_location_view_new")
+public func mk_user_location_view_new(
+    _ annotation: UnsafeMutableRawPointer?,
+    _ reuseIdentifier: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    do {
+        let view = try mkrSyncOnMain {
+            MKUserLocationView(
+                annotation: try mkrBorrowAnnotation(annotation),
+                reuseIdentifier: reuseIdentifier.map(String.init(cString:))
+            )
+        }
+        return mkrRetain(view)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_user_location_view_release")
+public func mk_user_location_view_release(_ annotationView: UnsafeMutableRawPointer?) {
     guard let annotationView else { return }
     mkrRelease(annotationView)
 }

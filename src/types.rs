@@ -2,10 +2,11 @@ pub use crate::address::{
     MKAddress, MKAddressFilter, MKAddressFilterMode, MKAddressFilterOption,
     MKAddressRepresentations, MKAddressRepresentationsContextStyle,
 };
-pub use crate::annotation::MKPointAnnotation;
+pub use crate::annotation::{MKMapItemAnnotation, MKPointAnnotation, MKUserLocation};
 pub use crate::annotation_view::{
     MKAnnotation, MKAnnotationView, MKAnnotationViewCollisionMode, MKAnnotationViewDragState,
     MKAnnotationViewZPriority, MKFeatureDisplayPriority, MKMarkerAnnotationView,
+    MKPinAnnotationColor, MKPinAnnotationView, MKUserLocationView,
 };
 pub use crate::cluster_annotation::MKClusterAnnotation;
 pub use crate::configuration::{
@@ -36,13 +37,13 @@ pub use crate::look_around::{
 pub use crate::map_item::{MKMapItem, MKPlacemark};
 pub use crate::map_view::{MKFeatureVisibility, MKMapType, MKUserTrackingMode};
 pub use crate::overlay::{
-    MKCircle, MKGeodesicPolyline, MKMultiPoint, MKOverlay, MKOverlayLevel, MKPolygon, MKPolyline,
-    MKShape, MKTileOverlay, MKTileOverlayPath,
+    MKCircle, MKGeodesicPolyline, MKMultiPoint, MKMultiPolygon, MKMultiPolyline, MKOverlay,
+    MKOverlayLevel, MKPolygon, MKPolyline, MKShape, MKTileOverlay, MKTileOverlayPath,
 };
 pub use crate::overlay_renderer::{
     mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
-    MKOverlayPathRenderer, MKOverlayRenderer, MKPolygonRenderer, MKPolylineRenderer,
-    MKTileOverlayRenderer, MKZoomScale,
+    MKMultiPolygonRenderer, MKMultiPolylineRenderer, MKOverlayPathRenderer, MKOverlayRenderer,
+    MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer, MKZoomScale,
 };
 pub use crate::point_of_interest::{
     MKLocalPointsOfInterestRequest, MKPointOfInterestCategory, MKPointOfInterestFilter,

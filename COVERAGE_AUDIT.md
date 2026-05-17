@@ -1,10 +1,10 @@
 # mapkit coverage audit (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 243
-VERIFIED: 167
-GAPS: 72
-EXEMPT: 4
-COVERAGE_PCT: 68.7%
+VERIFIED: 178
+GAPS: 63
+EXEMPT: 2
+COVERAGE_PCT: 73.3%
 
 This audit counts named top-level macOS declarations from MapKit.framework headers (interfaces, protocols, typedefs/enums/structs, exported constants, and top-level functions). Objective-C categories were not counted as standalone symbols.
 
@@ -78,10 +78,17 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKMapSnapshotOptions | interface | MKMapSnapshotOptions.h | MKMapSnapshotOptions (src/snapshotter.rs) |
 | MKMapSnapshotter | interface | MKMapSnapshotter.h | MKMapSnapshotter (src/snapshotter.rs) |
 | MKMapType | enum | MKTypes.h | MKMapType (src/map_view.rs) |
+| MKMapItemAnnotation | interface | MKMapItemAnnotation.h | MKMapItemAnnotation (src/annotation.rs) |
 | MKMapView | interface | MKMapView.h | MKMapView (src/map_view.rs) |
+| MKMapViewDefaultAnnotationViewReuseIdentifier | constant | MKMapView.h | MKMapView::default_annotation_view_reuse_identifier (src/map_view.rs) |
+| MKMapViewDefaultClusterAnnotationViewReuseIdentifier | constant | MKMapView.h | MKMapView::default_cluster_annotation_view_reuse_identifier (src/map_view.rs) |
 | MKMarkerAnnotationView | interface | MKMarkerAnnotationView.h | MKMarkerAnnotationView (src/annotation_view.rs) |
 | MKMetersBetweenMapPoints | function | MKGeometry.h | MKMapPoint::distance_to (src/geometry.rs) |
 | MKMultiPoint | interface | MKMultiPoint.h | MKMultiPoint (src/overlay.rs) |
+| MKMultiPolygon | interface | MKMultiPolygon.h | MKMultiPolygon (src/overlay.rs) |
+| MKMultiPolygonRenderer | interface | MKMultiPolygonRenderer.h | MKMultiPolygonRenderer (src/overlay_renderer.rs) |
+| MKMultiPolyline | interface | MKMultiPolyline.h | MKMultiPolyline (src/overlay.rs) |
+| MKMultiPolylineRenderer | interface | MKMultiPolylineRenderer.h | MKMultiPolylineRenderer (src/overlay_renderer.rs) |
 | MKOverlay | protocol | MKOverlay.h | MKOverlay (src/overlay.rs) |
 | MKOverlayLevel | enum | MKMapView.h | MKOverlayLevel (src/overlay.rs) |
 | MKOverlayPathRenderer | interface | MKOverlayPathRenderer.h | MKOverlayPathRenderer (src/overlay_renderer.rs) |
@@ -163,6 +170,8 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKPointOfInterestCategoryZoo | constant | MKPointOfInterestCategory.h | MKPointOfInterestCategory::zoo (src/point_of_interest.rs) |
 | MKPointOfInterestFilter | interface | MKPointOfInterestFilter.h | MKPointOfInterestFilter (src/point_of_interest.rs) |
 | MKPointsOfInterestRequestMaxRadius | constant | MKLocalPointsOfInterestRequest.h | MKLocalPointsOfInterestRequest::max_radius (src/point_of_interest.rs) |
+| MKPinAnnotationColor | enum | MKPinAnnotationView.h | MKPinAnnotationColor (src/annotation_view.rs) |
+| MKPinAnnotationView | interface | MKPinAnnotationView.h | MKPinAnnotationView (src/annotation_view.rs) |
 | MKPolygon | interface | MKPolygon.h | MKPolygon (src/overlay.rs) |
 | MKPolygonRenderer | interface | MKPolygonRenderer.h | MKPolygonRenderer (src/overlay_renderer.rs) |
 | MKPolyline | interface | MKPolyline.h | MKPolyline (src/overlay.rs) |
@@ -177,6 +186,8 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKTileOverlay | interface | MKTileOverlay.h | MKTileOverlay (src/overlay.rs) |
 | MKTileOverlayPath | struct | MKTileOverlay.h | MKTileOverlayPath (src/overlay.rs) |
 | MKTileOverlayRenderer | interface | MKTileOverlayRenderer.h | MKTileOverlayRenderer (src/overlay_renderer.rs) |
+| MKUserLocation | interface | MKUserLocation.h | MKUserLocation (src/annotation.rs) |
+| MKUserLocationView | interface | MKUserLocationView.h | MKUserLocationView (src/annotation_view.rs) |
 | MKZoomScale | typedef | MKGeometry.h | MKZoomScale (src/overlay_renderer.rs) |
 
 ## 🔴 GAPS
@@ -233,33 +244,22 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKLaunchOptionsMapTypeKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
 | MKLaunchOptionsShowsTrafficKey | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
 | MKMapItemTypeIdentifier | constant | MKMapItem.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKMapItemAnnotation | interface | MKMapItemAnnotation.h | Map-item launch, identifier, or request APIs are not exposed. |
 | MKMapItemDetailViewController | interface | MKMapItemDetailViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKMapItemDetailViewControllerDelegate | protocol | MKMapItemDetailViewController.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKMapItemIdentifier | interface | MKMapItemIdentifier.h | Map-item launch, identifier, or request APIs are not exposed. |
 | MKMapItemRequest | interface | MKMapItemRequest.h | Map-item launch, identifier, or request APIs are not exposed. |
-| MKMapViewDefaultAnnotationViewReuseIdentifier | constant | MKMapView.h | Additional map-view constants or delegate helpers are not wrapped. |
-| MKMapViewDefaultClusterAnnotationViewReuseIdentifier | constant | MKMapView.h | Additional map-view constants or delegate helpers are not wrapped. |
 | MKMapViewDelegate | protocol | MKMapView.h | Delegate callbacks are not surfaced as Rust traits. |
-| MKMultiPolygon | interface | MKMultiPolygon.h | Additional overlay/shape surface is not wrapped. |
-| MKMultiPolygonRenderer | interface | MKMultiPolygonRenderer.h | Renderer and drawing surface is not wrapped. |
-| MKMultiPolyline | interface | MKMultiPolyline.h | Additional overlay/shape surface is not wrapped. |
-| MKMultiPolylineRenderer | interface | MKMultiPolylineRenderer.h | Renderer and drawing surface is not wrapped. |
 | MKPitchControl | interface | MKPitchControl.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKMapItemDetailSelectionAccessoryCalloutStyle | enum | MKSelectionAccessory.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKMapItemDetailSelectionAccessoryPresentationStyle | interface | MKSelectionAccessory.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKSelectionAccessory | interface | MKSelectionAccessory.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKErrorCode | enum | MKTypes.h | Errors are surfaced as generic NSErrorInfo rather than the MKErrorCode enum. |
 | MKErrorDomain | constant | MKTypes.h | Errors are surfaced as generic NSErrorInfo rather than the MKErrorDomain export. |
-| MKUserLocation | interface | MKUserLocation.h | No public Rust wrapper currently exposes this MapKit symbol. |
-| MKUserLocationView | interface | MKUserLocationView.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 | MKZoomControl | interface | MKZoomControl.h | UI/delegate/AppKit surface is not wrapped by the crate. |
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |
 | --- | --- | --- | --- | --- |
 | MKSearchCompletionFilterType | enum | MKLocalSearchCompleter.h | Deprecated on macOS 10.15; superseded by MKLocalSearchCompleterResultType. | __attribute__((availability(ios,introduced=9.3,deprecated=13.0,message="Use MKLocalSearchCompleterResultType"))), __attribute__((availability(macos,introduced=10.11.4,deprecated=10.15,message="Use MKLocalSearchCompleterResultType"))), __attribute__((availability(tvos,introduced=9.2,deprecated=13.0,message="Use MKLocalSearchCompleterResultType"))), __attribute__((availability(watchos,unavailable))) |
-| MKPinAnnotationColor | enum | MKPinAnnotationView.h | Deprecated on macOS 10.13; superseded by MKMarkerAnnotationView. | __attribute__((availability(macosx,introduced=10_9,deprecated=10_11,message="" "Use MKPinAnnotationView's pinTintColor instead"))), __attribute__((availability(tvos,unavailable))), __attribute__((availability(watchos,unavailable))) |
-| MKPinAnnotationView | interface | MKPinAnnotationView.h | Deprecated on macOS 10.13; superseded by MKMarkerAnnotationView. | __attribute__((availability(macos,introduced=10.9,deprecated=13.0,replacement="MKMarkerAnnotationView"))), __attribute__((availability(ios,introduced=3.0,deprecated=16.0,replacement="MKMarkerAnnotationView"))), __attribute__((availability(tvos,introduced=9.2,deprecated=16.0,replacement="MKMarkerAnnotationView"))), __attribute__((availability(watchos,unavailable))) |
 | MKPlacemark | interface | MKPlacemark.h | Deprecated on macOS 26.0; the crate still keeps a compatibility wrapper. | __attribute__((availability(ios,introduced=3.0,deprecated=26.0,message="Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems"))), __attribute__((availability(visionos,introduced=1.0,deprecated=26.0,message="Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems"))), __attribute__((availability(tvos,introduced=9.2,deprecated=26.0,message="Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems"))), __attribute__((availability(macos,introduced=10.9,deprecated=26.0,message="Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems"))), __attribute__((availability(watchos,introduced=2.0,deprecated=26.0,message="Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems"))) |
 

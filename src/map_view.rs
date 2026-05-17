@@ -3,7 +3,8 @@ use std::ptr::{self, NonNull};
 
 use serde::{Deserialize, Serialize};
 
-use crate::annotation::MKPointAnnotation;
+use crate::annotation::{MKPointAnnotation, MKUserLocation};
+use crate::annotation_view::MKAnnotation;
 use crate::cluster_annotation::MKClusterAnnotation;
 use crate::configuration::{
     MKMapCamera, MKMapCameraBoundary, MKMapCameraZoomRange, MKMapConfiguration,
@@ -11,7 +12,7 @@ use crate::configuration::{
 use crate::error::MapKitError;
 use crate::ffi;
 use crate::geometry::{MKCoordinate, MKCoordinateRegion, MKMapRect, MKScreenPoint, MKScreenSize};
-use crate::overlay::{MKCircle, MKOverlayLevel, MKPolygon, MKPolyline};
+use crate::overlay::{MKCircle, MKOverlay, MKOverlayLevel, MKPolygon, MKPolyline};
 use crate::point_of_interest::MKPointOfInterestFilter;
 use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
 
@@ -62,6 +63,7 @@ struct MKMapViewState {
     shows_scale: bool,
     shows_points_of_interest: bool,
     shows_user_location: bool,
+    user_location_visible: bool,
     shows_user_tracking_button: bool,
     pitch_button_visibility: Option<MKFeatureVisibility>,
     user_tracking_mode: MKUserTrackingMode,
@@ -429,6 +431,55 @@ impl MKMapView {
         Ok(self.state()?.shows_user_location)
     }
 
+    pub fn is_user_location_visible(&self) -> Result<bool, MapKitError> {
+        Ok(self.state()?.user_location_visible)
+    }
+
+    pub fn user_location(&self) -> Result<MKUserLocation, MapKitError> {
+        let mut error = ptr::null_mut();
+        let raw = unsafe { ffi::mk_map_view_user_location(self.raw.as_ptr(), &mut error) };
+        if raw.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(error, "failed to read MKMapView userLocation")
+            })
+        } else {
+            MKUserLocation::from_owned_raw(raw)
+        }
+    }
+
+    pub fn default_annotation_view_reuse_identifier() -> Result<String, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload =
+            unsafe { ffi::mk_map_view_default_annotation_view_reuse_identifier(&mut error) };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(
+                    error,
+                    "failed to read MKMapViewDefaultAnnotationViewReuseIdentifier",
+                )
+            })
+        } else {
+            Ok(unsafe { crate::private::take_string(payload) }.unwrap_or_default())
+        }
+    }
+
+    pub fn default_cluster_annotation_view_reuse_identifier() -> Result<String, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload = unsafe {
+            ffi::mk_map_view_default_cluster_annotation_view_reuse_identifier(&mut error)
+        };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(
+                    error,
+                    "failed to read MKMapViewDefaultClusterAnnotationViewReuseIdentifier",
+                )
+            })
+        } else {
+            Ok(unsafe { crate::private::take_string(payload) }.unwrap_or_default())
+        }
+    }
+
     pub fn set_shows_user_location(&self, shows_user_location: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             shows_user_location: Some(shows_user_location),
@@ -488,81 +539,97 @@ impl MKMapView {
         Ok(self.state()?.overlay_count)
     }
 
-    pub fn add_point_annotation(&self, annotation: &MKPointAnnotation) -> Result<(), MapKitError> {
+    pub fn add_annotation<A: MKAnnotation + ?Sized>(
+        &self,
+        annotation: &A,
+    ) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe {
-            ffi::mk_map_view_add_point_annotation(
+            ffi::mk_map_view_add_annotation(
                 self.raw.as_ptr(),
-                annotation.as_raw(),
+                annotation.as_raw_annotation(),
                 &mut error,
             );
         };
-        unsafe { unit_result(error, "failed to add MKPointAnnotation") }
+        unsafe { unit_result(error, "failed to add MKAnnotation") }
+    }
+
+    pub fn remove_annotation<A: MKAnnotation + ?Sized>(
+        &self,
+        annotation: &A,
+    ) -> Result<(), MapKitError> {
+        let mut error = ptr::null_mut();
+        unsafe {
+            ffi::mk_map_view_remove_annotation(
+                self.raw.as_ptr(),
+                annotation.as_raw_annotation(),
+                &mut error,
+            );
+        };
+        unsafe { unit_result(error, "failed to remove MKAnnotation") }
+    }
+
+    pub fn add_point_annotation(&self, annotation: &MKPointAnnotation) -> Result<(), MapKitError> {
+        self.add_annotation(annotation)
     }
 
     pub fn remove_point_annotation(
         &self,
         annotation: &MKPointAnnotation,
     ) -> Result<(), MapKitError> {
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_map_view_remove_point_annotation(
-                self.raw.as_ptr(),
-                annotation.as_raw(),
-                &mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to remove MKPointAnnotation") }
+        self.remove_annotation(annotation)
     }
 
     pub fn add_cluster_annotation(
         &self,
         annotation: &MKClusterAnnotation,
     ) -> Result<(), MapKitError> {
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_map_view_add_cluster_annotation(
-                self.raw.as_ptr(),
-                annotation.as_raw(),
-                &mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to add MKClusterAnnotation") }
+        self.add_annotation(annotation)
     }
 
     pub fn remove_cluster_annotation(
         &self,
         annotation: &MKClusterAnnotation,
     ) -> Result<(), MapKitError> {
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_map_view_remove_cluster_annotation(
-                self.raw.as_ptr(),
-                annotation.as_raw(),
-                &mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to remove MKClusterAnnotation") }
+        self.remove_annotation(annotation)
     }
 
-    pub fn add_circle(&self, circle: &MKCircle, level: MKOverlayLevel) -> Result<(), MapKitError> {
+    pub fn add_overlay<O: MKOverlay + ?Sized>(
+        &self,
+        overlay: &O,
+        level: MKOverlayLevel,
+    ) -> Result<(), MapKitError> {
         let level = json_cstring(&level, "MKOverlayLevel")?;
         let mut error = ptr::null_mut();
         unsafe {
-            ffi::mk_map_view_add_circle(
+            ffi::mk_map_view_add_overlay(
                 self.raw.as_ptr(),
-                circle.as_raw(),
+                overlay.as_raw_overlay(),
                 level.as_ptr(),
                 &mut error,
             );
         };
-        unsafe { unit_result(error, "failed to add MKCircle") }
+        unsafe { unit_result(error, "failed to add MKOverlay") }
+    }
+
+    pub fn remove_overlay<O: MKOverlay + ?Sized>(&self, overlay: &O) -> Result<(), MapKitError> {
+        let mut error = ptr::null_mut();
+        unsafe {
+            ffi::mk_map_view_remove_overlay(
+                self.raw.as_ptr(),
+                overlay.as_raw_overlay(),
+                &mut error,
+            );
+        };
+        unsafe { unit_result(error, "failed to remove MKOverlay") }
+    }
+
+    pub fn add_circle(&self, circle: &MKCircle, level: MKOverlayLevel) -> Result<(), MapKitError> {
+        self.add_overlay(circle, level)
     }
 
     pub fn remove_circle(&self, circle: &MKCircle) -> Result<(), MapKitError> {
-        let mut error = ptr::null_mut();
-        unsafe { ffi::mk_map_view_remove_circle(self.raw.as_ptr(), circle.as_raw(), &mut error) };
-        unsafe { unit_result(error, "failed to remove MKCircle") }
+        self.remove_overlay(circle)
     }
 
     pub fn add_polyline(
@@ -570,25 +637,11 @@ impl MKMapView {
         polyline: &MKPolyline,
         level: MKOverlayLevel,
     ) -> Result<(), MapKitError> {
-        let level = json_cstring(&level, "MKOverlayLevel")?;
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_map_view_add_polyline(
-                self.raw.as_ptr(),
-                polyline.as_raw(),
-                level.as_ptr(),
-                &mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to add MKPolyline") }
+        self.add_overlay(polyline, level)
     }
 
     pub fn remove_polyline(&self, polyline: &MKPolyline) -> Result<(), MapKitError> {
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_map_view_remove_polyline(self.raw.as_ptr(), polyline.as_raw(), &mut error);
-        };
-        unsafe { unit_result(error, "failed to remove MKPolyline") }
+        self.remove_overlay(polyline)
     }
 
     pub fn add_polygon(
@@ -596,23 +649,11 @@ impl MKMapView {
         polygon: &MKPolygon,
         level: MKOverlayLevel,
     ) -> Result<(), MapKitError> {
-        let level = json_cstring(&level, "MKOverlayLevel")?;
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_map_view_add_polygon(
-                self.raw.as_ptr(),
-                polygon.as_raw(),
-                level.as_ptr(),
-                &mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to add MKPolygon") }
+        self.add_overlay(polygon, level)
     }
 
     pub fn remove_polygon(&self, polygon: &MKPolygon) -> Result<(), MapKitError> {
-        let mut error = ptr::null_mut();
-        unsafe { ffi::mk_map_view_remove_polygon(self.raw.as_ptr(), polygon.as_raw(), &mut error) };
-        unsafe { unit_result(error, "failed to remove MKPolygon") }
+        self.remove_overlay(polygon)
     }
 
     pub(crate) const fn as_raw(&self) -> *mut c_void {

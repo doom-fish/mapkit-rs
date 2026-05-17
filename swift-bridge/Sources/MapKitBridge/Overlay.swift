@@ -48,6 +48,22 @@ struct MKRTileOverlayOptionsPayload: Codable {
     var canReplaceMapContent: Bool?
 }
 
+struct MKRMultiPolylineStatePayload: Codable {
+    var coordinate: MKRCoordinatePayload
+    var boundingMapRect: MKRMapRectPayload
+    var canReplaceMapContent: Bool
+    var polylineCount: Int
+    var polylines: [[MKRCoordinatePayload]]
+}
+
+struct MKRMultiPolygonStatePayload: Codable {
+    var coordinate: MKRCoordinatePayload
+    var boundingMapRect: MKRMapRectPayload
+    var canReplaceMapContent: Bool
+    var polygonCount: Int
+    var polygons: [[MKRCoordinatePayload]]
+}
+
 func mkrBorrowOverlay(_ ptr: UnsafeMutableRawPointer?) throws -> any MKOverlay {
     guard let ptr else {
         throw NSError(
@@ -98,6 +114,30 @@ private func mkrEncodeTileOverlayState(_ overlay: MKTileOverlay) -> MKRTileOverl
         maximumZ: overlay.maximumZ,
         canReplaceMapContent: overlay.canReplaceMapContent
     )
+}
+
+private func mkrEncodePolylineCoordinates(_ polyline: MKPolyline) -> [MKRCoordinatePayload] {
+    let pointCount = polyline.pointCount
+    var coordinates = Array(
+        repeating: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+        count: pointCount
+    )
+    if pointCount > 0 {
+        polyline.getCoordinates(&coordinates, range: NSRange(location: 0, length: pointCount))
+    }
+    return mkrEncodeCoordinates(coordinates)
+}
+
+private func mkrEncodePolygonCoordinates(_ polygon: MKPolygon) -> [MKRCoordinatePayload] {
+    let pointCount = polygon.pointCount
+    var coordinates = Array(
+        repeating: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+        count: pointCount
+    )
+    if pointCount > 0 {
+        polygon.getCoordinates(&coordinates, range: NSRange(location: 0, length: pointCount))
+    }
+    return mkrEncodeCoordinates(coordinates)
 }
 
 @_cdecl("mk_circle_new_json")
@@ -297,6 +337,134 @@ public func mk_polygon_state_json(
 public func mk_polygon_release(_ polygon: UnsafeMutableRawPointer?) {
     guard let polygon else { return }
     mkrRelease(polygon)
+}
+
+@_cdecl("mk_multi_polyline_new")
+public func mk_multi_polyline_new(
+    _ polylines: UnsafePointer<UnsafeMutableRawPointer?>?,
+    _ count: Int,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    do {
+        guard let polylines, count > 0 else {
+            throw NSError(
+                domain: "mapkit-rs",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "MKMultiPolyline requires at least one MKPolyline"]
+            )
+        }
+        let members = try UnsafeBufferPointer(start: polylines, count: count).map { pointer in
+            guard let pointer else {
+                throw NSError(
+                    domain: "mapkit-rs",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "missing MKPolyline"]
+                )
+            }
+            return mkrBorrow(pointer, as: MKPolyline.self)
+        }
+        let overlay = MKMultiPolyline(members)
+        return mkrRetain(overlay)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_multi_polyline_state_json")
+public func mk_multi_polyline_state_json(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKMultiPolyline")
+        return nil
+    }
+
+    do {
+        let multiPolyline = mkrBorrow(overlay, as: MKMultiPolyline.self)
+        let payload = MKRMultiPolylineStatePayload(
+            coordinate: mkrEncodeCoordinate(multiPolyline.coordinate),
+            boundingMapRect: mkrEncodeMapRect(multiPolyline.boundingMapRect),
+            canReplaceMapContent: (multiPolyline as MKOverlay).canReplaceMapContent?() ?? false,
+            polylineCount: multiPolyline.polylines.count,
+            polylines: multiPolyline.polylines.map(mkrEncodePolylineCoordinates)
+        )
+        return mkrCString(try mkrEncodeJSON(payload))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_multi_polyline_release")
+public func mk_multi_polyline_release(_ overlay: UnsafeMutableRawPointer?) {
+    guard let overlay else { return }
+    mkrRelease(overlay)
+}
+
+@_cdecl("mk_multi_polygon_new")
+public func mk_multi_polygon_new(
+    _ polygons: UnsafePointer<UnsafeMutableRawPointer?>?,
+    _ count: Int,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutableRawPointer? {
+    do {
+        guard let polygons, count > 0 else {
+            throw NSError(
+                domain: "mapkit-rs",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "MKMultiPolygon requires at least one MKPolygon"]
+            )
+        }
+        let members = try UnsafeBufferPointer(start: polygons, count: count).map { pointer in
+            guard let pointer else {
+                throw NSError(
+                    domain: "mapkit-rs",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "missing MKPolygon"]
+                )
+            }
+            return mkrBorrow(pointer, as: MKPolygon.self)
+        }
+        let overlay = MKMultiPolygon(members)
+        return mkrRetain(overlay)
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_multi_polygon_state_json")
+public func mk_multi_polygon_state_json(
+    _ overlay: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let overlay else {
+        mkrSetMessageError(outError, message: "missing MKMultiPolygon")
+        return nil
+    }
+
+    do {
+        let multiPolygon = mkrBorrow(overlay, as: MKMultiPolygon.self)
+        let payload = MKRMultiPolygonStatePayload(
+            coordinate: mkrEncodeCoordinate(multiPolygon.coordinate),
+            boundingMapRect: mkrEncodeMapRect(multiPolygon.boundingMapRect),
+            canReplaceMapContent: (multiPolygon as MKOverlay).canReplaceMapContent?() ?? false,
+            polygonCount: multiPolygon.polygons.count,
+            polygons: multiPolygon.polygons.map(mkrEncodePolygonCoordinates)
+        )
+        return mkrCString(try mkrEncodeJSON(payload))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_multi_polygon_release")
+public func mk_multi_polygon_release(_ overlay: UnsafeMutableRawPointer?) {
+    guard let overlay else { return }
+    mkrRelease(overlay)
 }
 
 @_cdecl("mk_tile_overlay_new")

@@ -46,6 +46,7 @@ struct MKRMapViewStatePayload: Codable {
     var showsScale: Bool
     var showsPointsOfInterest: Bool
     var showsUserLocation: Bool
+    var userLocationVisible: Bool
     var showsUserTrackingButton: Bool
     var pitchButtonVisibility: MKRFeatureVisibilityPayload?
     var userTrackingMode: MKRUserTrackingModePayload
@@ -185,6 +186,7 @@ private func mkrEncodeMapViewState(_ mapView: MKMapView) -> MKRMapViewStatePaylo
         showsScale: mapView.showsScale,
         showsPointsOfInterest: mapView.showsPointsOfInterest,
         showsUserLocation: mapView.showsUserLocation,
+        userLocationVisible: mapView.isUserLocationVisible,
         showsUserTrackingButton: showsUserTrackingButton,
         pitchButtonVisibility: pitchButtonVisibility,
         userTrackingMode: userTrackingMode,
@@ -454,92 +456,37 @@ public func mk_map_view_convert_point_to_coordinate_json(
     }
 }
 
-@_cdecl("mk_map_view_add_point_annotation")
-public func mk_map_view_add_point_annotation(
+@_cdecl("mk_map_view_user_location")
+public func mk_map_view_user_location(
     _ mapView: UnsafeMutableRawPointer?,
-    _ annotation: UnsafeMutableRawPointer?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let annotation else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKPointAnnotation")
-        return
+) -> UnsafeMutableRawPointer? {
+    guard let mapView else {
+        mkrSetMessageError(outError, message: "missing MKMapView")
+        return nil
     }
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        let pointAnnotation = mkrBorrow(annotation, as: MKPointAnnotation.self)
-        try mkrSyncOnMain {
-            view.addAnnotation(pointAnnotation)
-        }
+        return try mkrSyncOnMain { mkrRetain(view.userLocation) }
     } catch {
         mkrSetError(outError, error)
+        return nil
     }
 }
 
-@_cdecl("mk_map_view_remove_point_annotation")
-public func mk_map_view_remove_point_annotation(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ annotation: UnsafeMutableRawPointer?,
+@_cdecl("mk_map_view_default_annotation_view_reuse_identifier")
+public func mk_map_view_default_annotation_view_reuse_identifier(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let annotation else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKPointAnnotation")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let pointAnnotation = mkrBorrow(annotation, as: MKPointAnnotation.self)
-        try mkrSyncOnMain {
-            view.removeAnnotation(pointAnnotation)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
+) -> UnsafeMutablePointer<CChar>? {
+    mkrCString(MKMapViewDefaultAnnotationViewReuseIdentifier)
 }
 
-@_cdecl("mk_map_view_add_cluster_annotation")
-public func mk_map_view_add_cluster_annotation(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ annotation: UnsafeMutableRawPointer?,
+@_cdecl("mk_map_view_default_cluster_annotation_view_reuse_identifier")
+public func mk_map_view_default_cluster_annotation_view_reuse_identifier(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let annotation else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKClusterAnnotation")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let clusterAnnotation = mkrBorrow(annotation, as: MKClusterAnnotation.self)
-        try mkrSyncOnMain {
-            view.addAnnotation(clusterAnnotation)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
-}
-
-@_cdecl("mk_map_view_remove_cluster_annotation")
-public func mk_map_view_remove_cluster_annotation(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ annotation: UnsafeMutableRawPointer?,
-    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let annotation else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKClusterAnnotation")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let clusterAnnotation = mkrBorrow(annotation, as: MKClusterAnnotation.self)
-        try mkrSyncOnMain {
-            view.removeAnnotation(clusterAnnotation)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
+) -> UnsafeMutablePointer<CChar>? {
+    mkrCString(MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
 }
 
 private func mkrDecodeOverlayLevel(_ levelJSON: UnsafePointer<CChar>?) throws -> MKOverlayLevel {
@@ -547,138 +494,102 @@ private func mkrDecodeOverlayLevel(_ levelJSON: UnsafePointer<CChar>?) throws ->
     return mkrOverlayLevel(from: payload)
 }
 
-@_cdecl("mk_map_view_add_circle")
-public func mk_map_view_add_circle(
+@_cdecl("mk_map_view_add_annotation")
+public func mk_map_view_add_annotation(
     _ mapView: UnsafeMutableRawPointer?,
-    _ circle: UnsafeMutableRawPointer?,
+    _ annotation: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) {
+    guard let mapView, let annotation else {
+        mkrSetMessageError(outError, message: "missing MKMapView or MKAnnotation")
+        return
+    }
+
+    do {
+        let view = mkrBorrow(mapView, as: MKMapView.self)
+        guard let model = try mkrBorrowAnnotation(annotation) else {
+            throw NSError(
+                domain: "mapkit-rs",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "missing MKAnnotation"]
+            )
+        }
+        try mkrSyncOnMain {
+            view.addAnnotation(model)
+        }
+    } catch {
+        mkrSetError(outError, error)
+    }
+}
+
+@_cdecl("mk_map_view_remove_annotation")
+public func mk_map_view_remove_annotation(
+    _ mapView: UnsafeMutableRawPointer?,
+    _ annotation: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) {
+    guard let mapView, let annotation else {
+        mkrSetMessageError(outError, message: "missing MKMapView or MKAnnotation")
+        return
+    }
+
+    do {
+        let view = mkrBorrow(mapView, as: MKMapView.self)
+        guard let model = try mkrBorrowAnnotation(annotation) else {
+            throw NSError(
+                domain: "mapkit-rs",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "missing MKAnnotation"]
+            )
+        }
+        try mkrSyncOnMain {
+            view.removeAnnotation(model)
+        }
+    } catch {
+        mkrSetError(outError, error)
+    }
+}
+
+@_cdecl("mk_map_view_add_overlay")
+public func mk_map_view_add_overlay(
+    _ mapView: UnsafeMutableRawPointer?,
+    _ overlay: UnsafeMutableRawPointer?,
     _ levelJSON: UnsafePointer<CChar>?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) {
-    guard let mapView, let circle else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKCircle")
+    guard let mapView, let overlay else {
+        mkrSetMessageError(outError, message: "missing MKMapView or MKOverlay")
         return
     }
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        let overlay = mkrBorrow(circle, as: MKCircle.self)
+        let model = try mkrBorrowOverlay(overlay)
         let level = try mkrDecodeOverlayLevel(levelJSON)
         try mkrSyncOnMain {
-            view.addOverlay(overlay, level: level)
+            view.addOverlay(model, level: level)
         }
     } catch {
         mkrSetError(outError, error)
     }
 }
 
-@_cdecl("mk_map_view_remove_circle")
-public func mk_map_view_remove_circle(
+@_cdecl("mk_map_view_remove_overlay")
+public func mk_map_view_remove_overlay(
     _ mapView: UnsafeMutableRawPointer?,
-    _ circle: UnsafeMutableRawPointer?,
+    _ overlay: UnsafeMutableRawPointer?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) {
-    guard let mapView, let circle else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKCircle")
+    guard let mapView, let overlay else {
+        mkrSetMessageError(outError, message: "missing MKMapView or MKOverlay")
         return
     }
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        let overlay = mkrBorrow(circle, as: MKCircle.self)
+        let model = try mkrBorrowOverlay(overlay)
         try mkrSyncOnMain {
-            view.removeOverlay(overlay)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
-}
-
-@_cdecl("mk_map_view_add_polyline")
-public func mk_map_view_add_polyline(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ polyline: UnsafeMutableRawPointer?,
-    _ levelJSON: UnsafePointer<CChar>?,
-    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let polyline else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKPolyline")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let overlay = mkrBorrow(polyline, as: MKPolyline.self)
-        let level = try mkrDecodeOverlayLevel(levelJSON)
-        try mkrSyncOnMain {
-            view.addOverlay(overlay, level: level)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
-}
-
-@_cdecl("mk_map_view_remove_polyline")
-public func mk_map_view_remove_polyline(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ polyline: UnsafeMutableRawPointer?,
-    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let polyline else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKPolyline")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let overlay = mkrBorrow(polyline, as: MKPolyline.self)
-        try mkrSyncOnMain {
-            view.removeOverlay(overlay)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
-}
-
-@_cdecl("mk_map_view_add_polygon")
-public func mk_map_view_add_polygon(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ polygon: UnsafeMutableRawPointer?,
-    _ levelJSON: UnsafePointer<CChar>?,
-    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let polygon else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKPolygon")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let overlay = mkrBorrow(polygon, as: MKPolygon.self)
-        let level = try mkrDecodeOverlayLevel(levelJSON)
-        try mkrSyncOnMain {
-            view.addOverlay(overlay, level: level)
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
-}
-
-@_cdecl("mk_map_view_remove_polygon")
-public func mk_map_view_remove_polygon(
-    _ mapView: UnsafeMutableRawPointer?,
-    _ polygon: UnsafeMutableRawPointer?,
-    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) {
-    guard let mapView, let polygon else {
-        mkrSetMessageError(outError, message: "missing MKMapView or MKPolygon")
-        return
-    }
-
-    do {
-        let view = mkrBorrow(mapView, as: MKMapView.self)
-        let overlay = mkrBorrow(polygon, as: MKPolygon.self)
-        try mkrSyncOnMain {
-            view.removeOverlay(overlay)
+            view.removeOverlay(model)
         }
     } catch {
         mkrSetError(outError, error)

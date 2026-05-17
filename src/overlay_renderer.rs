@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use crate::error::MapKitError;
 use crate::ffi;
 use crate::geometry::MKMapRect;
-use crate::overlay::{MKCircle, MKOverlay, MKPolygon, MKPolyline, MKTileOverlay};
+use crate::overlay::{
+    MKCircle, MKMultiPolygon, MKMultiPolyline, MKOverlay, MKPolygon, MKPolyline, MKTileOverlay,
+};
 use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
 
 pub type MKZoomScale = f64;
@@ -479,6 +481,133 @@ impl Drop for MKTileOverlayRenderer {
         unsafe { ffi::mk_tile_overlay_renderer_release(self.raw.as_ptr()) };
     }
 }
+
+macro_rules! path_renderer_impl {
+    ($name:ident, $new_fn:ident, $overlay_ty:ty, $label:literal) => {
+        #[derive(Debug)]
+        pub struct $name {
+            raw: NonNull<c_void>,
+        }
+
+        impl $name {
+            pub fn new(overlay: &$overlay_ty) -> Result<Self, MapKitError> {
+                let mut error = ptr::null_mut();
+                let raw = unsafe { ffi::$new_fn(overlay.as_raw(), &mut error) };
+                let raw = owned_handle(raw, error, concat!("failed to create ", $label))?;
+                Ok(Self { raw })
+            }
+
+            fn state(&self) -> Result<MKOverlayPathRendererState, MapKitError> {
+                let mut error = ptr::null_mut();
+                let payload = unsafe {
+                    ffi::mk_overlay_path_renderer_state_json(self.raw.as_ptr(), &mut error)
+                };
+                if payload.is_null() {
+                    Err(unsafe {
+                        MapKitError::from_error_ptr(
+                            error,
+                            concat!("failed to read ", $label, " state"),
+                        )
+                    })
+                } else {
+                    unsafe { parse_json_ptr(payload, concat!($label, " state")) }
+                }
+            }
+
+            fn apply_options(
+                &self,
+                options: &MKOverlayPathRendererOptions,
+            ) -> Result<(), MapKitError> {
+                let options = json_cstring(options, concat!($label, " options"))?;
+                let mut error = ptr::null_mut();
+                unsafe {
+                    ffi::mk_overlay_path_renderer_apply_options_json(
+                        self.raw.as_ptr(),
+                        options.as_ptr(),
+                        &mut error,
+                    );
+                };
+                unsafe { unit_result(error, concat!("failed to update ", $label)) }
+            }
+
+            pub fn alpha(&self) -> Result<f64, MapKitError> {
+                Ok(self.state()?.base.alpha)
+            }
+
+            pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
+                Ok(self.state()?.base.content_scale_factor)
+            }
+
+            pub fn line_width(&self) -> Result<f64, MapKitError> {
+                Ok(self.state()?.line_width)
+            }
+
+            pub fn set_line_width(&self, line_width: f64) -> Result<(), MapKitError> {
+                self.apply_options(&MKOverlayPathRendererOptions {
+                    line_width: Some(line_width),
+                    ..MKOverlayPathRendererOptions::default()
+                })
+            }
+
+            pub fn line_dash_phase(&self) -> Result<f64, MapKitError> {
+                Ok(self.state()?.line_dash_phase)
+            }
+
+            pub fn set_line_dash_phase(&self, line_dash_phase: f64) -> Result<(), MapKitError> {
+                self.apply_options(&MKOverlayPathRendererOptions {
+                    line_dash_phase: Some(line_dash_phase),
+                    ..MKOverlayPathRendererOptions::default()
+                })
+            }
+
+            pub fn line_dash_pattern(&self) -> Result<Option<Vec<f64>>, MapKitError> {
+                Ok(self.state()?.line_dash_pattern)
+            }
+
+            pub fn set_line_dash_pattern(
+                &self,
+                line_dash_pattern: Option<Vec<f64>>,
+            ) -> Result<(), MapKitError> {
+                self.apply_options(&MKOverlayPathRendererOptions {
+                    line_dash_pattern_present: true,
+                    line_dash_pattern,
+                    ..MKOverlayPathRendererOptions::default()
+                })
+            }
+
+            pub fn should_rasterize(&self) -> Result<bool, MapKitError> {
+                Ok(self.state()?.should_rasterize)
+            }
+
+            pub fn set_should_rasterize(&self, should_rasterize: bool) -> Result<(), MapKitError> {
+                self.apply_options(&MKOverlayPathRendererOptions {
+                    should_rasterize: Some(should_rasterize),
+                    ..MKOverlayPathRendererOptions::default()
+                })
+            }
+        }
+
+        impl Drop for $name {
+            fn drop(&mut self) {
+                unsafe { ffi::mk_overlay_path_renderer_release(self.raw.as_ptr()) };
+            }
+        }
+    };
+}
+
+path_renderer_impl!(
+    MKMultiPolylineRenderer,
+    mk_multi_polyline_renderer_new,
+    MKMultiPolyline,
+    "MKMultiPolylineRenderer"
+);
+
+path_renderer_impl!(
+    MKMultiPolygonRenderer,
+    mk_multi_polygon_renderer_new,
+    MKMultiPolygon,
+    "MKMultiPolygonRenderer"
+);
 
 pub fn mk_road_width_at_zoom_scale(zoom_scale: MKZoomScale) -> f64 {
     unsafe { ffi::mk_road_width_at_zoom_scale(zoom_scale) }

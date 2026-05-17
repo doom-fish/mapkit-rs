@@ -89,6 +89,26 @@ struct MKTileOverlayOptions {
     can_replace_map_content: Option<bool>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MKMultiPolylineState {
+    coordinate: MKCoordinate,
+    bounding_map_rect: MKMapRect,
+    can_replace_map_content: bool,
+    polyline_count: usize,
+    polylines: Vec<Vec<MKCoordinate>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MKMultiPolygonState {
+    coordinate: MKCoordinate,
+    bounding_map_rect: MKMapRect,
+    can_replace_map_content: bool,
+    polygon_count: usize,
+    polygons: Vec<Vec<MKCoordinate>>,
+}
+
 #[derive(Debug)]
 pub struct MKCircle {
     raw: NonNull<c_void>,
@@ -518,7 +538,11 @@ impl MKTileOverlay {
         let options = json_cstring(options, "MKTileOverlay options")?;
         let mut error = ptr::null_mut();
         unsafe {
-            ffi::mk_tile_overlay_apply_options_json(self.raw.as_ptr(), options.as_ptr(), &mut error);
+            ffi::mk_tile_overlay_apply_options_json(
+                self.raw.as_ptr(),
+                options.as_ptr(),
+                &mut error,
+            );
         };
         unsafe { unit_result(error, "failed to update MKTileOverlay") }
     }
@@ -655,5 +679,193 @@ impl MKOverlay for MKTileOverlay {
 impl Drop for MKTileOverlay {
     fn drop(&mut self) {
         unsafe { ffi::mk_tile_overlay_release(self.raw.as_ptr()) };
+    }
+}
+
+#[derive(Debug)]
+pub struct MKMultiPolyline {
+    raw: NonNull<c_void>,
+}
+
+impl MKMultiPolyline {
+    pub fn new(polylines: &[&MKPolyline]) -> Result<Self, MapKitError> {
+        let raw_polylines: Vec<*mut c_void> =
+            polylines.iter().map(|polyline| polyline.as_raw()).collect();
+        let mut error = ptr::null_mut();
+        let raw = unsafe {
+            ffi::mk_multi_polyline_new(raw_polylines.as_ptr(), raw_polylines.len(), &mut error)
+        };
+        let raw = owned_handle(raw, error, "failed to create MKMultiPolyline")?;
+        Ok(Self { raw })
+    }
+
+    fn state(&self) -> Result<MKMultiPolylineState, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload = unsafe { ffi::mk_multi_polyline_state_json(self.raw.as_ptr(), &mut error) };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(error, "failed to read MKMultiPolyline state")
+            })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKMultiPolyline state") }
+        }
+    }
+
+    pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
+        Ok(self.state()?.coordinate)
+    }
+
+    pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
+        Ok(self.state()?.bounding_map_rect)
+    }
+
+    pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
+        Ok(self.state()?.can_replace_map_content)
+    }
+
+    pub fn polyline_count(&self) -> Result<usize, MapKitError> {
+        Ok(self.state()?.polyline_count)
+    }
+
+    pub fn polylines(&self) -> Result<Vec<Vec<MKCoordinate>>, MapKitError> {
+        Ok(self.state()?.polylines)
+    }
+
+    pub(crate) const fn as_raw(&self) -> *mut c_void {
+        self.raw.as_ptr()
+    }
+}
+
+impl MKAnnotation for MKMultiPolyline {
+    fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
+        Self::coordinate(self)
+    }
+
+    fn title(&self) -> Result<Option<String>, MapKitError> {
+        Ok(None)
+    }
+
+    fn subtitle(&self) -> Result<Option<String>, MapKitError> {
+        Ok(None)
+    }
+
+    fn as_raw_annotation(&self) -> *mut c_void {
+        self.as_raw()
+    }
+}
+
+impl MKOverlay for MKMultiPolyline {
+    fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
+        Self::bounding_map_rect(self)
+    }
+
+    fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
+        Self::can_replace_map_content(self)
+    }
+
+    fn as_raw_overlay(&self) -> *mut c_void {
+        self.as_raw()
+    }
+}
+
+impl MKShape for MKMultiPolyline {}
+
+impl Drop for MKMultiPolyline {
+    fn drop(&mut self) {
+        unsafe { ffi::mk_multi_polyline_release(self.raw.as_ptr()) };
+    }
+}
+
+#[derive(Debug)]
+pub struct MKMultiPolygon {
+    raw: NonNull<c_void>,
+}
+
+impl MKMultiPolygon {
+    pub fn new(polygons: &[&MKPolygon]) -> Result<Self, MapKitError> {
+        let raw_polygons: Vec<*mut c_void> =
+            polygons.iter().map(|polygon| polygon.as_raw()).collect();
+        let mut error = ptr::null_mut();
+        let raw = unsafe {
+            ffi::mk_multi_polygon_new(raw_polygons.as_ptr(), raw_polygons.len(), &mut error)
+        };
+        let raw = owned_handle(raw, error, "failed to create MKMultiPolygon")?;
+        Ok(Self { raw })
+    }
+
+    fn state(&self) -> Result<MKMultiPolygonState, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload = unsafe { ffi::mk_multi_polygon_state_json(self.raw.as_ptr(), &mut error) };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(error, "failed to read MKMultiPolygon state")
+            })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKMultiPolygon state") }
+        }
+    }
+
+    pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
+        Ok(self.state()?.coordinate)
+    }
+
+    pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
+        Ok(self.state()?.bounding_map_rect)
+    }
+
+    pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
+        Ok(self.state()?.can_replace_map_content)
+    }
+
+    pub fn polygon_count(&self) -> Result<usize, MapKitError> {
+        Ok(self.state()?.polygon_count)
+    }
+
+    pub fn polygons(&self) -> Result<Vec<Vec<MKCoordinate>>, MapKitError> {
+        Ok(self.state()?.polygons)
+    }
+
+    pub(crate) const fn as_raw(&self) -> *mut c_void {
+        self.raw.as_ptr()
+    }
+}
+
+impl MKAnnotation for MKMultiPolygon {
+    fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
+        Self::coordinate(self)
+    }
+
+    fn title(&self) -> Result<Option<String>, MapKitError> {
+        Ok(None)
+    }
+
+    fn subtitle(&self) -> Result<Option<String>, MapKitError> {
+        Ok(None)
+    }
+
+    fn as_raw_annotation(&self) -> *mut c_void {
+        self.as_raw()
+    }
+}
+
+impl MKOverlay for MKMultiPolygon {
+    fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
+        Self::bounding_map_rect(self)
+    }
+
+    fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
+        Self::can_replace_map_content(self)
+    }
+
+    fn as_raw_overlay(&self) -> *mut c_void {
+        self.as_raw()
+    }
+}
+
+impl MKShape for MKMultiPolygon {}
+
+impl Drop for MKMultiPolygon {
+    fn drop(&mut self) {
+        unsafe { ffi::mk_multi_polygon_release(self.raw.as_ptr()) };
     }
 }

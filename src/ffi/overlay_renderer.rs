@@ -112,4 +112,13 @@ extern "C" {
     ) -> *mut c_char;
     pub fn mk_tile_overlay_renderer_reload_data(renderer: *mut c_void, out_error: *mut *mut c_char);
     pub fn mk_tile_overlay_renderer_release(renderer: *mut c_void);
+
+    pub fn mk_multi_polyline_renderer_new(
+        overlay: *mut c_void,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_void;
+    pub fn mk_multi_polygon_renderer_new(
+        overlay: *mut c_void,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_void;
 }

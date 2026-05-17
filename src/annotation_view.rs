@@ -568,3 +568,229 @@ impl Drop for MKMarkerAnnotationView {
         unsafe { ffi::mk_marker_annotation_view_release(self.raw.as_ptr()) };
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MKPinAnnotationColor {
+    Red,
+    Green,
+    Purple,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MKPinAnnotationViewState {
+    base: MKAnnotationViewState,
+    animates_drop: bool,
+    pin_color: MKPinAnnotationColor,
+}
+
+#[derive(Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MKPinAnnotationViewOptions {
+    animates_drop: Option<bool>,
+    pin_color: Option<MKPinAnnotationColor>,
+}
+
+#[derive(Debug)]
+pub struct MKPinAnnotationView {
+    raw: NonNull<c_void>,
+}
+
+impl MKPinAnnotationView {
+    pub fn new<A: MKAnnotation + ?Sized>(
+        annotation: Option<&A>,
+        reuse_identifier: Option<&str>,
+    ) -> Result<Self, MapKitError> {
+        let reuse_identifier = reuse_identifier
+            .map(|value| {
+                crate::private::cstring_from_str(value, "MKPinAnnotationView reuseIdentifier")
+            })
+            .transpose()?;
+        let mut error = ptr::null_mut();
+        let raw = unsafe {
+            ffi::mk_pin_annotation_view_new(
+                annotation.map_or(ptr::null_mut(), MKAnnotation::as_raw_annotation),
+                reuse_identifier
+                    .as_ref()
+                    .map_or(ptr::null(), |value| value.as_ptr()),
+                &mut error,
+            )
+        };
+        let raw = owned_handle(raw, error, "failed to create MKPinAnnotationView")?;
+        Ok(Self { raw })
+    }
+
+    fn state(&self) -> Result<MKPinAnnotationViewState, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload =
+            unsafe { ffi::mk_pin_annotation_view_state_json(self.raw.as_ptr(), &mut error) };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(error, "failed to read MKPinAnnotationView state")
+            })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKPinAnnotationView state") }
+        }
+    }
+
+    fn apply_options(&self, options: &MKPinAnnotationViewOptions) -> Result<(), MapKitError> {
+        let options = json_cstring(options, "MKPinAnnotationView options")?;
+        let mut error = ptr::null_mut();
+        unsafe {
+            ffi::mk_pin_annotation_view_apply_options_json(
+                self.raw.as_ptr(),
+                options.as_ptr(),
+                &mut error,
+            );
+        };
+        unsafe { unit_result(error, "failed to update MKPinAnnotationView") }
+    }
+
+    pub fn reuse_identifier(&self) -> Result<Option<String>, MapKitError> {
+        Ok(self.state()?.base.reuse_identifier)
+    }
+
+    pub fn annotation_title(&self) -> Result<Option<String>, MapKitError> {
+        Ok(self.state()?.base.annotation_title)
+    }
+
+    pub fn annotation_subtitle(&self) -> Result<Option<String>, MapKitError> {
+        Ok(self.state()?.base.annotation_subtitle)
+    }
+
+    pub fn animates_drop(&self) -> Result<bool, MapKitError> {
+        Ok(self.state()?.animates_drop)
+    }
+
+    pub fn set_animates_drop(&self, animates_drop: bool) -> Result<(), MapKitError> {
+        self.apply_options(&MKPinAnnotationViewOptions {
+            animates_drop: Some(animates_drop),
+            ..MKPinAnnotationViewOptions::default()
+        })
+    }
+
+    pub fn pin_color(&self) -> Result<MKPinAnnotationColor, MapKitError> {
+        Ok(self.state()?.pin_color)
+    }
+
+    pub fn set_pin_color(&self, pin_color: MKPinAnnotationColor) -> Result<(), MapKitError> {
+        self.apply_options(&MKPinAnnotationViewOptions {
+            pin_color: Some(pin_color),
+            ..MKPinAnnotationViewOptions::default()
+        })
+    }
+}
+
+impl Drop for MKPinAnnotationView {
+    fn drop(&mut self) {
+        unsafe { ffi::mk_pin_annotation_view_release(self.raw.as_ptr()) };
+    }
+}
+
+#[derive(Debug)]
+pub struct MKUserLocationView {
+    raw: NonNull<c_void>,
+}
+
+impl MKUserLocationView {
+    pub fn new<A: MKAnnotation + ?Sized>(
+        annotation: Option<&A>,
+        reuse_identifier: Option<&str>,
+    ) -> Result<Self, MapKitError> {
+        let reuse_identifier = reuse_identifier
+            .map(|value| {
+                crate::private::cstring_from_str(value, "MKUserLocationView reuseIdentifier")
+            })
+            .transpose()?;
+        let mut error = ptr::null_mut();
+        let raw = unsafe {
+            ffi::mk_user_location_view_new(
+                annotation.map_or(ptr::null_mut(), MKAnnotation::as_raw_annotation),
+                reuse_identifier
+                    .as_ref()
+                    .map_or(ptr::null(), |value| value.as_ptr()),
+                &mut error,
+            )
+        };
+        let raw = owned_handle(raw, error, "failed to create MKUserLocationView")?;
+        Ok(Self { raw })
+    }
+
+    fn state(&self) -> Result<MKAnnotationViewState, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload = unsafe { ffi::mk_annotation_view_state_json(self.raw.as_ptr(), &mut error) };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(error, "failed to read MKUserLocationView state")
+            })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKUserLocationView state") }
+        }
+    }
+
+    fn apply_options(&self, options: &MKAnnotationViewOptions) -> Result<(), MapKitError> {
+        let options = json_cstring(options, "MKUserLocationView options")?;
+        let mut error = ptr::null_mut();
+        unsafe {
+            ffi::mk_annotation_view_apply_options_json(
+                self.raw.as_ptr(),
+                options.as_ptr(),
+                &mut error,
+            );
+        };
+        unsafe { unit_result(error, "failed to update MKUserLocationView") }
+    }
+
+    pub fn reuse_identifier(&self) -> Result<Option<String>, MapKitError> {
+        Ok(self.state()?.reuse_identifier)
+    }
+
+    pub fn annotation_title(&self) -> Result<Option<String>, MapKitError> {
+        Ok(self.state()?.annotation_title)
+    }
+
+    pub fn annotation_subtitle(&self) -> Result<Option<String>, MapKitError> {
+        Ok(self.state()?.annotation_subtitle)
+    }
+
+    pub fn center_offset(&self) -> Result<MKScreenPoint, MapKitError> {
+        Ok(self.state()?.center_offset)
+    }
+
+    pub fn set_center_offset(&self, center_offset: MKScreenPoint) -> Result<(), MapKitError> {
+        self.apply_options(&MKAnnotationViewOptions {
+            center_offset: Some(center_offset),
+            ..MKAnnotationViewOptions::default()
+        })
+    }
+
+    pub fn can_show_callout(&self) -> Result<bool, MapKitError> {
+        Ok(self.state()?.can_show_callout)
+    }
+
+    pub fn set_can_show_callout(&self, can_show_callout: bool) -> Result<(), MapKitError> {
+        self.apply_options(&MKAnnotationViewOptions {
+            can_show_callout: Some(can_show_callout),
+            ..MKAnnotationViewOptions::default()
+        })
+    }
+
+    pub fn prepare_for_reuse(&self) -> Result<(), MapKitError> {
+        let mut error = ptr::null_mut();
+        unsafe { ffi::mk_annotation_view_prepare_for_reuse(self.raw.as_ptr(), &mut error) };
+        unsafe { unit_result(error, "failed to prepare MKUserLocationView for reuse") }
+    }
+
+    pub fn prepare_for_display(&self) -> Result<(), MapKitError> {
+        let mut error = ptr::null_mut();
+        unsafe { ffi::mk_annotation_view_prepare_for_display(self.raw.as_ptr(), &mut error) };
+        unsafe { unit_result(error, "failed to prepare MKUserLocationView for display") }
+    }
+}
+
+impl Drop for MKUserLocationView {
+    fn drop(&mut self) {
+        unsafe { ffi::mk_user_location_view_release(self.raw.as_ptr()) };
+    }
+}

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-05-17
+
+- Added `MKMapItemAnnotation`, `MKUserLocation`, `MKPinAnnotationView`, and `MKUserLocationView` wrappers for the remaining annotation-model/view gaps in the requested scope.
+- Added `MKMultiPolyline`, `MKMultiPolygon`, `MKMultiPolylineRenderer`, and `MKMultiPolygonRenderer` wrappers plus generic `MKMapView` annotation/overlay insertion helpers and default annotation-view reuse identifiers.
+- Expanded tests/examples for the new annotation and multi-overlay surfaces, and bumped the crate version to `0.2.2`.
+
 ## [0.2.1] - 2026-05-16
 
 - Added `MKMapCamera`, `MKMapCameraBoundary`, `MKMapCameraZoomRange`, `MKMapConfiguration`, and the standard/hybrid/imagery configuration wrappers.

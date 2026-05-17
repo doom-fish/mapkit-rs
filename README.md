@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS.
 
-> **Status:** v0.2.1 covers the requested MapKit areas for headless macOS workflows: `MKMapView`, annotation views, overlay renderers, camera/configuration, local search + completer, directions, snapshotters, geocoding, Look Around, expanded point-of-interest filters/constants, addresses, map items, cluster annotations, and user-tracking button visibility.
+> **Status:** v0.2.2 covers the requested MapKit areas for headless macOS workflows: `MKMapView`, annotation models/views (including `MKMapItemAnnotation`, `MKUserLocation`, `MKPinAnnotationView`, and `MKUserLocationView`), overlay models/renderers (including `MKMultiPolyline` / `MKMultiPolygon` families), camera/configuration, local search + completer, directions, snapshotters, geocoding, Look Around, full point-of-interest filters/constants, addresses, map items, cluster annotations, and user-tracking button visibility.
 
 ## Quick start
 
@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Highlights
 
-- `MKMapView` creation, region/map-rect conversions, interaction toggles, camera boundaries/zoom ranges, preferred configurations, annotations, overlays, and user tracking mode
-- `MKPointAnnotation`, `MKAnnotationView`, `MKMarkerAnnotationView`, `MKClusterAnnotation`, `MKCircle`, `MKPolyline`, `MKPolygon`, `MKTileOverlay`, and overlay renderers
+- `MKMapView` creation, region/map-rect conversions, interaction toggles, camera boundaries/zoom ranges, preferred configurations, generic annotations/overlays, default reuse identifiers, and user tracking mode
+- `MKPointAnnotation`, `MKMapItemAnnotation`, `MKUserLocation`, `MKAnnotationView`, `MKMarkerAnnotationView`, `MKPinAnnotationView`, `MKUserLocationView`, `MKClusterAnnotation`, `MKCircle`, `MKPolyline`, `MKMultiPolyline`, `MKPolygon`, `MKMultiPolygon`, `MKTileOverlay`, and overlay renderers
 - `MKLocalSearch`, `MKLocalSearchCompleter`, and `MKDirections` request/response bridges for search and routing services
 - `MKMapSnapshotter` and `MKLookAroundSnapshotter` wrappers for headless image generation
 - `MKGeocodingRequest` and `MKReverseGeocodingRequest` on macOS 26+
@@ -42,6 +42,7 @@ This crate ships numbered, headless-safe examples for every logical area:
 cargo run --example 01_mapkit_smoke
 cargo run --example 15_configuration_camera
 cargo run --example 17_annotation_view_basic
+cargo run --example 18_overlay_renderer_basic
 cargo run --example 19_points_of_interest_request
 ```
 
