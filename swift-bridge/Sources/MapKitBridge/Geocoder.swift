@@ -17,6 +17,7 @@ struct MKRReverseGeocodingRequestStatePayload: Codable {
     var loading: Bool
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_new")
 public func mk_geocoding_request_new(
     _ addressString: UnsafePointer<CChar>?,
@@ -28,13 +29,6 @@ public func mk_geocoding_request_new(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         guard let request = MKGeocodingRequest(addressString: String(cString: addressString)) else {
             throw NSError(
                 domain: "mapkit-rs",
@@ -49,6 +43,7 @@ public func mk_geocoding_request_new(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_state_json")
 public func mk_geocoding_request_state_json(
     _ request: UnsafeMutableRawPointer?,
@@ -60,13 +55,6 @@ public func mk_geocoding_request_state_json(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
         let payload = MKRGeocodingRequestStatePayload(
             addressString: geocoder.addressString,
@@ -82,6 +70,7 @@ public func mk_geocoding_request_state_json(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_set_region_json")
 public func mk_geocoding_request_set_region_json(
     _ request: UnsafeMutableRawPointer?,
@@ -94,13 +83,6 @@ public func mk_geocoding_request_set_region_json(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
         let region = try mkrDecodeJSON(regionJSON, as: MKRCoordinateRegionPayload.self)
         geocoder.region = mkrRegion(from: region)
@@ -109,6 +91,7 @@ public func mk_geocoding_request_set_region_json(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_set_preferred_locale")
 public func mk_geocoding_request_set_preferred_locale(
     _ request: UnsafeMutableRawPointer?,
@@ -121,13 +104,6 @@ public func mk_geocoding_request_set_preferred_locale(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
         geocoder.preferredLocale = localeIdentifier.map { Locale(identifier: String(cString: $0)) }
     } catch {
@@ -135,6 +111,7 @@ public func mk_geocoding_request_set_preferred_locale(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_get_map_items_json")
 public func mk_geocoding_request_get_map_items_json(
     _ request: UnsafeMutableRawPointer?,
@@ -146,13 +123,6 @@ public func mk_geocoding_request_get_map_items_json(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
         let mapItems = try mkrAwaitOnMain { completion in
             geocoder.getMapItems { mapItems, error in
@@ -174,13 +144,12 @@ public func mk_geocoding_request_get_map_items_json(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_cancel")
 public func mk_geocoding_request_cancel(_ request: UnsafeMutableRawPointer?) {
     guard let request else { return }
-    if #available(macOS 26.0, *) {
-        let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
-        geocoder.cancel()
-    }
+    let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
+    geocoder.cancel()
 }
 
 @_cdecl("mk_geocoding_request_release")
@@ -189,19 +158,13 @@ public func mk_geocoding_request_release(_ request: UnsafeMutableRawPointer?) {
     mkrRelease(request)
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_new_json")
 public func mk_reverse_geocoding_request_new_json(
     _ locationJSON: UnsafePointer<CChar>?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKReverseGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let location = try mkrDecodeJSON(locationJSON, as: MKRCoordinatePayload.self)
         guard let request = MKReverseGeocodingRequest(
             location: CLLocation(
@@ -222,6 +185,7 @@ public func mk_reverse_geocoding_request_new_json(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_state_json")
 public func mk_reverse_geocoding_request_state_json(
     _ request: UnsafeMutableRawPointer?,
@@ -233,13 +197,6 @@ public func mk_reverse_geocoding_request_state_json(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKReverseGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKReverseGeocodingRequest.self)
         let payload = MKRReverseGeocodingRequestStatePayload(
             location: mkrEncodeCoordinate(geocoder.location.coordinate),
@@ -254,6 +211,7 @@ public func mk_reverse_geocoding_request_state_json(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_set_preferred_locale")
 public func mk_reverse_geocoding_request_set_preferred_locale(
     _ request: UnsafeMutableRawPointer?,
@@ -266,13 +224,6 @@ public func mk_reverse_geocoding_request_set_preferred_locale(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKReverseGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKReverseGeocodingRequest.self)
         geocoder.preferredLocale = localeIdentifier.map { Locale(identifier: String(cString: $0)) }
     } catch {
@@ -280,6 +231,7 @@ public func mk_reverse_geocoding_request_set_preferred_locale(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_get_map_items_json")
 public func mk_reverse_geocoding_request_get_map_items_json(
     _ request: UnsafeMutableRawPointer?,
@@ -291,13 +243,6 @@ public func mk_reverse_geocoding_request_get_map_items_json(
     }
 
     do {
-        guard #available(macOS 26.0, *) else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKReverseGeocodingRequest requires macOS 26.0+"]
-            )
-        }
         let geocoder = mkrBorrow(request, as: MKReverseGeocodingRequest.self)
         let mapItems = try mkrAwaitOnMain { completion in
             geocoder.getMapItems { mapItems, error in
@@ -319,13 +264,12 @@ public func mk_reverse_geocoding_request_get_map_items_json(
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_cancel")
 public func mk_reverse_geocoding_request_cancel(_ request: UnsafeMutableRawPointer?) {
     guard let request else { return }
-    if #available(macOS 26.0, *) {
-        let geocoder = mkrBorrow(request, as: MKReverseGeocodingRequest.self)
-        geocoder.cancel()
-    }
+    let geocoder = mkrBorrow(request, as: MKReverseGeocodingRequest.self)
+    geocoder.cancel()
 }
 
 @_cdecl("mk_reverse_geocoding_request_release")

@@ -172,6 +172,7 @@ public func mk_map_snapshotter_start_async(
 
 // MARK: MKGeocodingRequest.getMapItems (macOS 26.0+)
 
+@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_map_items_async")
 public func mk_geocoding_request_map_items_async(
     _ request: UnsafeMutableRawPointer?,
@@ -180,10 +181,6 @@ public func mk_geocoding_request_map_items_async(
 ) {
     guard let request else {
         "missing MKGeocodingRequest".withCString { cb(nil, $0, ctx) }
-        return
-    }
-    guard #available(macOS 26.0, *) else {
-        "MKGeocodingRequest requires macOS 26.0+".withCString { cb(nil, $0, ctx) }
         return
     }
     let unmanaged = Unmanaged<MKGeocodingRequest>.fromOpaque(request)
@@ -215,6 +212,7 @@ public func mk_geocoding_request_map_items_async(
 
 // MARK: MKReverseGeocodingRequest.getMapItems (macOS 26.0+)
 
+@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_map_items_async")
 public func mk_reverse_geocoding_request_map_items_async(
     _ request: UnsafeMutableRawPointer?,
@@ -223,10 +221,6 @@ public func mk_reverse_geocoding_request_map_items_async(
 ) {
     guard let request else {
         "missing MKReverseGeocodingRequest".withCString { cb(nil, $0, ctx) }
-        return
-    }
-    guard #available(macOS 26.0, *) else {
-        "MKReverseGeocodingRequest requires macOS 26.0+".withCString { cb(nil, $0, ctx) }
         return
     }
     let unmanaged = Unmanaged<MKReverseGeocodingRequest>.fromOpaque(request)

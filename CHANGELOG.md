@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-05-18
+
+### Changed — `@available` guard sweep (macOS 26.0+)
+
+Added `@available(macOS 26.0, *)` attributes to every `@_cdecl` Swift bridge
+thunk that references a macOS 26-only MapKit API, so the bridge compiles
+cleanly against older SDKs (macOS 15 / Xcode 16) without runtime availability
+checks in the body.
+
+Guarded functions in `Geocoder.swift` (11 thunks):
+- `mk_geocoding_request_new`
+- `mk_geocoding_request_state_json`
+- `mk_geocoding_request_set_region_json`
+- `mk_geocoding_request_set_preferred_locale`
+- `mk_geocoding_request_get_map_items_json`
+- `mk_geocoding_request_cancel`
+- `mk_reverse_geocoding_request_new_json`
+- `mk_reverse_geocoding_request_state_json`
+- `mk_reverse_geocoding_request_set_preferred_locale`
+- `mk_reverse_geocoding_request_get_map_items_json`
+- `mk_reverse_geocoding_request_cancel`
+
+Guarded functions in `Async.swift` (2 thunks):
+- `mk_geocoding_request_map_items_async`
+- `mk_reverse_geocoding_request_map_items_async`
+
+The affected APIs (`MKGeocodingRequest`, `MKReverseGeocodingRequest`,
+`MKAddress`, `MKAddressRepresentations`) are all macOS 26.0+ additions.
+Redundant inner `guard #available` / `if #available` blocks were removed from
+the same functions since they are now unreachable.
+
 ## [0.3.0] - 2026-05-17
 
 ### Added — Tier-1 Async API (`async` feature)
