@@ -48,12 +48,14 @@ struct MKUserLocationState {
     heading: Option<f64>,
 }
 
+/// Wraps `MKPointAnnotation`.
 #[derive(Debug)]
 pub struct MKPointAnnotation {
     raw: NonNull<c_void>,
 }
 
 impl MKPointAnnotation {
+    /// Creates a wrapper for `MKPointAnnotation`.
     pub fn new(coordinate: MKCoordinate) -> Result<Self, MapKitError> {
         let payload = MKPointAnnotationState {
             coordinate,
@@ -88,18 +90,22 @@ impl MKPointAnnotation {
         unsafe { unit_result(error, "failed to update MKPointAnnotation") }
     }
 
+    /// Wraps `MKPointAnnotation.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKPointAnnotation.title`.
     pub fn title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.title)
     }
 
+    /// Wraps `MKPointAnnotation.subtitle`.
     pub fn subtitle(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.subtitle)
     }
 
+    /// Wraps `MKPointAnnotation.coordinate`.
     pub fn set_coordinate(&self, coordinate: MKCoordinate) -> Result<(), MapKitError> {
         self.apply(&MKPointAnnotationOptions {
             coordinate: Some(coordinate),
@@ -107,6 +113,7 @@ impl MKPointAnnotation {
         })
     }
 
+    /// Wraps `MKPointAnnotation.title`.
     pub fn set_title(&self, title: Option<&str>) -> Result<(), MapKitError> {
         if let Some(title) = title {
             let _ = cstring_from_str(title, "MKPointAnnotation title")?;
@@ -118,6 +125,7 @@ impl MKPointAnnotation {
         })
     }
 
+    /// Wraps `MKPointAnnotation.subtitle`.
     pub fn set_subtitle(&self, subtitle: Option<&str>) -> Result<(), MapKitError> {
         if let Some(subtitle) = subtitle {
             let _ = cstring_from_str(subtitle, "MKPointAnnotation subtitle")?;
@@ -140,12 +148,14 @@ impl Drop for MKPointAnnotation {
     }
 }
 
+/// Wraps `MKMapItemAnnotation`.
 #[derive(Debug)]
 pub struct MKMapItemAnnotation {
     raw: NonNull<c_void>,
 }
 
 impl MKMapItemAnnotation {
+    /// Creates a wrapper for `MKMapItemAnnotation`.
     pub fn new(map_item: &MKMapItem) -> Result<Self, MapKitError> {
         let payload = json_cstring(map_item, "MKMapItem")?;
         let mut error = ptr::null_mut();
@@ -167,18 +177,22 @@ impl MKMapItemAnnotation {
         }
     }
 
+    /// Wraps `MKMapItemAnnotation.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKMapItemAnnotation.title`.
     pub fn title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.title)
     }
 
+    /// Wraps `MKMapItemAnnotation.subtitle`.
     pub fn subtitle(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.subtitle)
     }
 
+    /// Wraps `MKMapItemAnnotation.mapItem`.
     pub fn map_item(&self) -> Result<MKMapItem, MapKitError> {
         Ok(self.state()?.map_item)
     }
@@ -212,6 +226,7 @@ impl Drop for MKMapItemAnnotation {
     }
 }
 
+/// Wraps `MKUserLocation`.
 #[derive(Debug)]
 pub struct MKUserLocation {
     raw: NonNull<c_void>,
@@ -236,26 +251,32 @@ impl MKUserLocation {
         }
     }
 
+    /// Wraps `MKUserLocation.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKUserLocation.title`.
     pub fn title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.title)
     }
 
+    /// Wraps `MKUserLocation.subtitle`.
     pub fn subtitle(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.subtitle)
     }
 
+    /// Wraps `MKUserLocation.isUpdating`.
     pub fn is_updating(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.updating)
     }
 
+    /// Wraps `MKUserLocation.location`.
     pub fn location(&self) -> Result<Option<MKCoordinate>, MapKitError> {
         Ok(self.state()?.location)
     }
 
+    /// Wraps `MKUserLocation.heading`.
     pub fn heading(&self) -> Result<Option<f64>, MapKitError> {
         Ok(self.state()?.heading)
     }

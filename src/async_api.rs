@@ -58,9 +58,7 @@ use doom_fish_utils::panic_safe::catch_user_panic;
 use crate::directions::{MKDirections, MKDirectionsRequest, MKDirectionsResponse, MKETAResponse};
 use crate::error::MapKitError;
 use crate::geocoder::{MKGeocodingRequest, MKReverseGeocodingRequest};
-use crate::local_search::{
-    MKLocalSearch, MKLocalSearchRequest, MKLocalSearchResponse,
-};
+use crate::local_search::{MKLocalSearch, MKLocalSearchRequest, MKLocalSearchResponse};
 use crate::map_item::MKMapItem;
 use crate::point_of_interest::MKLocalPointsOfInterestRequest;
 use crate::snapshotter::{MKMapSnapshot, MKMapSnapshotOptions, MKMapSnapshotter};
@@ -161,11 +159,7 @@ unsafe impl Send for RawSendPtr {}
 // ============================================================================
 
 /// C callback for all JSON-result async functions (T = String).
-extern "C" fn json_completion_cb(
-    json: *const c_char,
-    error: *const c_char,
-    ctx: *mut c_void,
-) {
+extern "C" fn json_completion_cb(json: *const c_char, error: *const c_char, ctx: *mut c_void) {
     catch_user_panic("mapkit::async_api::json_completion_cb", || {
         if !error.is_null() {
             // SAFETY: `error` is a non-null C string produced by the Swift
@@ -190,11 +184,7 @@ extern "C" fn json_completion_cb(
 }
 
 /// C callback for the snapshot async function (T = RawSendPtr).
-extern "C" fn snapshot_handle_cb(
-    handle: *mut c_void,
-    error: *const c_char,
-    ctx: *mut c_void,
-) {
+extern "C" fn snapshot_handle_cb(handle: *mut c_void, error: *const c_char, ctx: *mut c_void) {
     catch_user_panic("mapkit::async_api::snapshot_handle_cb", || {
         if !error.is_null() {
             // SAFETY: `error` is a non-null C string produced by the Swift
@@ -289,9 +279,7 @@ impl AsyncMKLocalSearch {
     /// # Errors
     ///
     /// Returns an error if constructing the `MKLocalSearch` fails.
-    pub fn search(
-        request: &MKLocalSearchRequest,
-    ) -> Result<LocalSearchStartFuture, MapKitError> {
+    pub fn search(request: &MKLocalSearchRequest) -> Result<LocalSearchStartFuture, MapKitError> {
         Ok(Self::start(MKLocalSearch::new(request)?))
     }
 
@@ -441,13 +429,10 @@ impl Future for SnapshotterStartFuture {
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         Pin::new(&mut self.inner).poll(cx).map(|r| {
-            r.map_err(MapKitError::OperationFailed)
-                .and_then(|p| {
-                    unsafe { MKMapSnapshot::from_raw_ptr(p.0) }
-                        .ok_or_else(|| {
-                            MapKitError::OperationFailed("null snapshot handle".to_string())
-                        })
-                })
+            r.map_err(MapKitError::OperationFailed).and_then(|p| {
+                unsafe { MKMapSnapshot::from_raw_ptr(p.0) }
+                    .ok_or_else(|| MapKitError::OperationFailed("null snapshot handle".to_string()))
+            })
         })
     }
 }
@@ -477,9 +462,7 @@ impl AsyncMKMapSnapshotter {
     /// # Errors
     ///
     /// Returns an error if constructing the snapshotter fails.
-    pub fn snapshot(
-        options: &MKMapSnapshotOptions,
-    ) -> Result<SnapshotterStartFuture, MapKitError> {
+    pub fn snapshot(options: &MKMapSnapshotOptions) -> Result<SnapshotterStartFuture, MapKitError> {
         Ok(Self::start(MKMapSnapshotter::new(options)?))
     }
 }
@@ -543,7 +526,9 @@ impl AsyncMKGeocodingRequest {
     ///
     /// Returns an error if constructing the request fails.
     pub fn geocode(address_string: &str) -> Result<GeocoderFuture, MapKitError> {
-        Ok(Self::get_map_items(MKGeocodingRequest::new(address_string)?))
+        Ok(Self::get_map_items(MKGeocodingRequest::new(
+            address_string,
+        )?))
     }
 }
 
@@ -599,9 +584,9 @@ impl AsyncMKReverseGeocodingRequest {
     /// # Errors
     ///
     /// Returns an error if constructing the request fails.
-    pub fn reverse_geocode(
-        location: MKCoordinate,
-    ) -> Result<ReverseGeocoderFuture, MapKitError> {
-        Ok(Self::get_map_items(MKReverseGeocodingRequest::new(location)?))
+    pub fn reverse_geocode(location: MKCoordinate) -> Result<ReverseGeocoderFuture, MapKitError> {
+        Ok(Self::get_map_items(MKReverseGeocodingRequest::new(
+            location,
+        )?))
     }
 }

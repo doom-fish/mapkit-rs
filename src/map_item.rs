@@ -9,15 +9,20 @@ use crate::ffi;
 use crate::geometry::MKCoordinate;
 use crate::private::{cstring_from_str, owned_handle, parse_json_ptr, take_string};
 
+/// Wraps `MKPlacemark`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKPlacemark {
+    /// Wraps `MKPlacemark.coordinate`.
     pub coordinate: MKCoordinate,
+    /// Wraps `MKPlacemark.countryCode`.
     pub country_code: Option<String>,
+    /// Wraps `MKPlacemark.title`.
     pub title: Option<String>,
 }
 
 impl MKPlacemark {
+    /// Creates a wrapper for `MKPlacemark`.
     pub const fn new(coordinate: MKCoordinate) -> Self {
         Self {
             coordinate,
@@ -26,26 +31,31 @@ impl MKPlacemark {
         }
     }
 
+    /// Wraps `MKPlacemark.countryCode`.
     pub fn with_country_code(mut self, country_code: impl Into<String>) -> Self {
         self.country_code = Some(country_code.into());
         self
     }
 
+    /// Wraps `MKPlacemark.title`.
     pub fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
         self
     }
 }
 
+/// Wraps `MKMapItemIdentifier`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct MKMapItemIdentifier(pub String);
 
 impl MKMapItemIdentifier {
+    /// Creates a wrapper for `MKMapItemIdentifier`.
     pub fn new(raw_value: impl Into<String>) -> Self {
         Self(raw_value.into())
     }
 
+    /// Wraps `MKMapItemIdentifier.rawValue`.
     pub fn raw_value(&self) -> &str {
         &self.0
     }
@@ -57,25 +67,39 @@ impl AsRef<str> for MKMapItemIdentifier {
     }
 }
 
+/// Wraps `MKMapItem`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKMapItem {
+    /// Wraps `MKMapItem.identifier`.
     pub identifier: Option<String>,
+    /// Wraps `MKMapItem.alternateIdentifiers`.
     #[serde(default)]
     pub alternate_identifiers: Vec<String>,
+    /// Wraps `MKMapItem.name`.
     pub name: Option<String>,
+    /// Wraps `MKMapItem.phoneNumber`.
     pub phone_number: Option<String>,
+    /// Wraps `MKMapItem.url`.
     pub url: Option<String>,
+    /// Wraps `MKMapItem.timeZoneIdentifier`.
     pub time_zone_identifier: Option<String>,
+    /// Wraps `MKMapItem.pointOfInterestCategory`.
     pub point_of_interest_category: Option<String>,
+    /// Wraps `MKMapItem.isCurrentLocation`.
     pub is_current_location: bool,
+    /// Wraps `MKMapItem.placemark`.
     pub placemark: Option<MKPlacemark>,
+    /// Wraps `MKMapItem.location`.
     pub location: Option<MKCoordinate>,
+    /// Wraps `MKMapItem.address`.
     pub address: Option<MKAddress>,
+    /// Wraps `MKMapItem.addressRepresentations`.
     pub address_representations: Option<MKAddressRepresentations>,
 }
 
 impl MKMapItem {
+    /// Creates a wrapper for `MKMapItem`.
     pub fn new(placemark: MKPlacemark) -> Self {
         let coordinate = placemark.coordinate;
         Self {
@@ -94,6 +118,7 @@ impl MKMapItem {
         }
     }
 
+    /// Wraps `MKMapItem.fromLocation`.
     pub fn from_location(location: MKCoordinate, address: Option<MKAddress>) -> Self {
         Self {
             identifier: None,
@@ -111,6 +136,7 @@ impl MKMapItem {
         }
     }
 
+    /// Wraps `MKMapItem.currentLocation`.
     pub fn current_location() -> Self {
         Self {
             identifier: None,
@@ -128,29 +154,31 @@ impl MKMapItem {
         }
     }
 
+    /// Wraps `MKMapItem.name`.
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
 
+    /// Wraps `MKMapItem.phoneNumber`.
     pub fn with_phone_number(mut self, phone_number: impl Into<String>) -> Self {
         self.phone_number = Some(phone_number.into());
         self
     }
 
+    /// Wraps `MKMapItem.url`.
     pub fn with_url(mut self, url: impl Into<String>) -> Self {
         self.url = Some(url.into());
         self
     }
 
-    pub fn with_time_zone_identifier(
-        mut self,
-        time_zone_identifier: impl Into<String>,
-    ) -> Self {
+    /// Wraps `MKMapItem.timeZoneIdentifier`.
+    pub fn with_time_zone_identifier(mut self, time_zone_identifier: impl Into<String>) -> Self {
         self.time_zone_identifier = Some(time_zone_identifier.into());
         self
     }
 
+    /// Wraps `MKMapItem.pointOfInterestCategory`.
     pub fn with_point_of_interest_category(
         mut self,
         point_of_interest_category: impl Into<String>,
@@ -159,20 +187,27 @@ impl MKMapItem {
         self
     }
 
+    /// Wraps `MKMapItem.address`.
     pub fn with_address(mut self, address: MKAddress) -> Self {
         self.address = Some(address);
         self
     }
 
+    /// Wraps `MKMapItem.coordinate`.
     pub fn coordinate(&self) -> Option<MKCoordinate> {
-        self.location
-            .or_else(|| self.placemark.as_ref().map(|placemark| placemark.coordinate))
+        self.location.or_else(|| {
+            self.placemark
+                .as_ref()
+                .map(|placemark| placemark.coordinate)
+        })
     }
 
+    /// Wraps `MKMapItem.identifierValue`.
     pub fn identifier_value(&self) -> Option<MKMapItemIdentifier> {
         self.identifier.clone().map(MKMapItemIdentifier)
     }
 
+    /// Wraps `MKMapItem.alternateIdentifierValues`.
     pub fn alternate_identifier_values(&self) -> Vec<MKMapItemIdentifier> {
         self.alternate_identifiers
             .iter()
@@ -181,6 +216,7 @@ impl MKMapItem {
             .collect()
     }
 
+    /// Wraps `MKMapItem.launchOptionsCameraKey`.
     pub fn launch_options_camera_key() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsCameraKey,
@@ -188,6 +224,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsDirectionsModeCycling`.
     pub fn launch_options_directions_mode_cycling() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsDirectionsModeCycling,
@@ -195,6 +232,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsDirectionsModeDefault`.
     pub fn launch_options_directions_mode_default() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsDirectionsModeDefault,
@@ -202,6 +240,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsDirectionsModeDriving`.
     pub fn launch_options_directions_mode_driving() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsDirectionsModeDriving,
@@ -209,6 +248,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsDirectionsModeKey`.
     pub fn launch_options_directions_mode_key() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsDirectionsModeKey,
@@ -216,6 +256,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsDirectionsModeTransit`.
     pub fn launch_options_directions_mode_transit() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsDirectionsModeTransit,
@@ -223,6 +264,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsDirectionsModeWalking`.
     pub fn launch_options_directions_mode_walking() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsDirectionsModeWalking,
@@ -230,6 +272,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsMapCenterKey`.
     pub fn launch_options_map_center_key() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsMapCenterKey,
@@ -237,6 +280,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsMapSpanKey`.
     pub fn launch_options_map_span_key() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsMapSpanKey,
@@ -244,6 +288,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsMapTypeKey`.
     pub fn launch_options_map_type_key() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsMapTypeKey,
@@ -251,6 +296,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.launchOptionsShowsTrafficKey`.
     pub fn launch_options_shows_traffic_key() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::LaunchOptionsShowsTrafficKey,
@@ -258,6 +304,7 @@ impl MKMapItem {
         )
     }
 
+    /// Wraps `MKMapItem.typeIdentifier`.
     pub fn type_identifier() -> Result<String, MapKitError> {
         map_item_string_constant(
             MKMapItemStringConstantKind::MapItemTypeIdentifier,
@@ -274,12 +321,14 @@ struct MKMapItemRequestState {
     loading: bool,
 }
 
+/// Wraps `MKMapItemRequest`.
 #[derive(Debug)]
 pub struct MKMapItemRequest {
     raw: NonNull<c_void>,
 }
 
 impl MKMapItemRequest {
+    /// Creates a wrapper for `MKMapItemRequest`.
     pub fn new(map_item_identifier: &MKMapItemIdentifier) -> Result<Self, MapKitError> {
         let identifier = cstring_from_str(map_item_identifier.raw_value(), "MKMapItemIdentifier")?;
         let mut error = ptr::null_mut();
@@ -300,21 +349,26 @@ impl MKMapItemRequest {
         }
     }
 
+    /// Wraps `MKMapItemRequest.mapItemIdentifier`.
     pub fn map_item_identifier(&self) -> Result<Option<MKMapItemIdentifier>, MapKitError> {
         Ok(self.state()?.map_item_identifier.map(MKMapItemIdentifier))
     }
 
+    /// Wraps `MKMapItemRequest.isCancelled`.
     pub fn is_cancelled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.cancelled)
     }
 
+    /// Wraps `MKMapItemRequest.isLoading`.
     pub fn is_loading(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.loading)
     }
 
+    /// Wraps `MKMapItemRequest.mapItem`.
     pub fn map_item(&self) -> Result<MKMapItem, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_map_item_request_get_map_item_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_map_item_request_get_map_item_json(self.raw.as_ptr(), &mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKMapItemRequest getMapItem failed") })
         } else {
@@ -322,6 +376,7 @@ impl MKMapItemRequest {
         }
     }
 
+    /// Wraps `MKMapItemRequest.cancel`.
     pub fn cancel(&self) {
         unsafe { ffi::mk_map_item_request_cancel(self.raw.as_ptr()) };
     }

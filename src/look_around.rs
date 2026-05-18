@@ -26,14 +26,18 @@ struct MKLookAroundSnapshotState {
     size: MKScreenSize,
 }
 
+/// Wraps `MKLookAroundSnapshotOptions`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKLookAroundSnapshotOptions {
+    /// Wraps `MKLookAroundSnapshotOptions.size`.
     pub size: MKScreenSize,
+    /// Wraps `MKLookAroundSnapshotOptions.pointOfInterestFilter`.
     pub point_of_interest_filter: Option<MKPointOfInterestFilter>,
 }
 
 impl MKLookAroundSnapshotOptions {
+    /// Creates a wrapper for `MKLookAroundSnapshotOptions`.
     pub const fn new(size: MKScreenSize) -> Self {
         Self {
             size,
@@ -41,6 +45,7 @@ impl MKLookAroundSnapshotOptions {
         }
     }
 
+    /// Wraps `MKLookAroundSnapshotOptions.pointOfInterestFilter`.
     pub fn with_point_of_interest_filter(
         mut self,
         point_of_interest_filter: MKPointOfInterestFilter,
@@ -50,33 +55,30 @@ impl MKLookAroundSnapshotOptions {
     }
 }
 
+/// Wraps `MKLookAroundSceneRequest`.
 #[derive(Debug)]
 pub struct MKLookAroundSceneRequest {
     raw: NonNull<c_void>,
 }
 
 impl MKLookAroundSceneRequest {
+    /// Creates a wrapper for `MKLookAroundSceneRequest`.
     pub fn new(coordinate: MKCoordinate) -> Result<Self, MapKitError> {
         let coordinate = json_cstring(&coordinate, "MKCoordinate")?;
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_look_around_scene_request_new_coordinate_json(
-                coordinate.as_ptr(),
-                &mut error,
-            )
+            ffi::mk_look_around_scene_request_new_coordinate_json(coordinate.as_ptr(), &mut error)
         };
         let raw = owned_handle(raw, error, "failed to create MKLookAroundSceneRequest")?;
         Ok(Self { raw })
     }
 
+    /// Wraps `MKLookAroundSceneRequest.fromMapItem`.
     pub fn from_map_item(map_item: &MKMapItem) -> Result<Self, MapKitError> {
         let map_item = json_cstring(map_item, "MKMapItem")?;
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_look_around_scene_request_new_map_item_json(
-                map_item.as_ptr(),
-                &mut error,
-            )
+            ffi::mk_look_around_scene_request_new_map_item_json(map_item.as_ptr(), &mut error)
         };
         let raw = owned_handle(
             raw,
@@ -88,9 +90,8 @@ impl MKLookAroundSceneRequest {
 
     fn state(&self) -> Result<MKLookAroundSceneRequestState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe {
-            ffi::mk_look_around_scene_request_state_json(self.raw.as_ptr(), &mut error)
-        };
+        let payload =
+            unsafe { ffi::mk_look_around_scene_request_state_json(self.raw.as_ptr(), &mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKLookAroundSceneRequest state")
@@ -100,29 +101,36 @@ impl MKLookAroundSceneRequest {
         }
     }
 
+    /// Wraps `MKLookAroundSceneRequest.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKLookAroundSceneRequest.hasMapItem`.
     pub fn has_map_item(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.has_map_item)
     }
 
+    /// Wraps `MKLookAroundSceneRequest.isCancelled`.
     pub fn is_cancelled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.cancelled)
     }
 
+    /// Wraps `MKLookAroundSceneRequest.isLoading`.
     pub fn is_loading(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.loading)
     }
 
+    /// Wraps `MKLookAroundSceneRequest.scene`.
     pub fn scene(&self) -> Result<MKLookAroundScene, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_look_around_scene_request_get_scene(self.raw.as_ptr(), &mut error) };
+        let raw =
+            unsafe { ffi::mk_look_around_scene_request_get_scene(self.raw.as_ptr(), &mut error) };
         let raw = owned_handle(raw, error, "MKLookAroundSceneRequest getScene failed")?;
         Ok(MKLookAroundScene { raw })
     }
 
+    /// Wraps `MKLookAroundSceneRequest.cancel`.
     pub fn cancel(&self) {
         unsafe { ffi::mk_look_around_scene_request_cancel(self.raw.as_ptr()) };
     }
@@ -134,6 +142,7 @@ impl Drop for MKLookAroundSceneRequest {
     }
 }
 
+/// Wraps `MKLookAroundScene`.
 #[derive(Debug)]
 pub struct MKLookAroundScene {
     raw: NonNull<c_void>,
@@ -151,12 +160,14 @@ impl Drop for MKLookAroundScene {
     }
 }
 
+/// Wraps `MKLookAroundSnapshotter`.
 #[derive(Debug)]
 pub struct MKLookAroundSnapshotter {
     raw: NonNull<c_void>,
 }
 
 impl MKLookAroundSnapshotter {
+    /// Creates a wrapper for `MKLookAroundSnapshotter`.
     pub fn new(
         scene: &MKLookAroundScene,
         options: &MKLookAroundSnapshotOptions,
@@ -164,27 +175,27 @@ impl MKLookAroundSnapshotter {
         let options = json_cstring(options, "MKLookAroundSnapshotOptions")?;
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_look_around_snapshotter_new(
-                scene.as_raw(),
-                options.as_ptr(),
-                &mut error,
-            )
+            ffi::mk_look_around_snapshotter_new(scene.as_raw(), options.as_ptr(), &mut error)
         };
         let raw = owned_handle(raw, error, "failed to create MKLookAroundSnapshotter")?;
         Ok(Self { raw })
     }
 
+    /// Wraps `MKLookAroundSnapshotter.snapshot`.
     pub fn snapshot(&self) -> Result<MKLookAroundSnapshot, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_look_around_snapshotter_get_snapshot(self.raw.as_ptr(), &mut error) };
+        let raw =
+            unsafe { ffi::mk_look_around_snapshotter_get_snapshot(self.raw.as_ptr(), &mut error) };
         let raw = owned_handle(raw, error, "MKLookAroundSnapshotter getSnapshot failed")?;
         Ok(MKLookAroundSnapshot { raw })
     }
 
+    /// Wraps `MKLookAroundSnapshotter.isLoading`.
     pub fn is_loading(&self) -> bool {
         unsafe { ffi::mk_look_around_snapshotter_is_loading(self.raw.as_ptr()) }
     }
 
+    /// Wraps `MKLookAroundSnapshotter.cancel`.
     pub fn cancel(&self) {
         unsafe { ffi::mk_look_around_snapshotter_cancel(self.raw.as_ptr()) };
     }
@@ -196,6 +207,7 @@ impl Drop for MKLookAroundSnapshotter {
     }
 }
 
+/// Wraps `MKLookAroundSnapshot`.
 #[derive(Debug)]
 pub struct MKLookAroundSnapshot {
     raw: NonNull<c_void>,
@@ -204,7 +216,8 @@ pub struct MKLookAroundSnapshot {
 impl MKLookAroundSnapshot {
     fn state(&self) -> Result<MKLookAroundSnapshotState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_look_around_snapshot_state_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_look_around_snapshot_state_json(self.raw.as_ptr(), &mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKLookAroundSnapshot state")
@@ -214,10 +227,12 @@ impl MKLookAroundSnapshot {
         }
     }
 
+    /// Wraps `MKLookAroundSnapshot.imageByteLen`.
     pub fn image_byte_len(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.image_byte_len)
     }
 
+    /// Wraps `MKLookAroundSnapshot.size`.
     pub fn size(&self) -> Result<MKScreenSize, MapKitError> {
         Ok(self.state()?.size)
     }

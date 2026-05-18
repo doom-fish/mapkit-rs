@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// Wraps `MKMapItemDetailSelectionAccessoryCalloutStyle`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKMapItemDetailSelectionAccessoryCalloutStyle {
@@ -8,6 +9,7 @@ pub enum MKMapItemDetailSelectionAccessoryCalloutStyle {
     Compact,
 }
 
+/// Wraps `MKMapItemDetailSelectionAccessoryPresentationKind`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKMapItemDetailSelectionAccessoryPresentationKind {
@@ -17,6 +19,7 @@ pub enum MKMapItemDetailSelectionAccessoryPresentationKind {
     OpenInMaps,
 }
 
+/// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKMapItemDetailSelectionAccessoryPresentationStyle {
@@ -26,6 +29,7 @@ pub struct MKMapItemDetailSelectionAccessoryPresentationStyle {
 }
 
 impl MKMapItemDetailSelectionAccessoryPresentationStyle {
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.automatic`.
     pub const fn automatic() -> Self {
         Self {
             kind: MKMapItemDetailSelectionAccessoryPresentationKind::Automatic,
@@ -34,6 +38,7 @@ impl MKMapItemDetailSelectionAccessoryPresentationStyle {
         }
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.automaticWithPresentingViewController`.
     pub const fn automatic_with_presenting_view_controller() -> Self {
         Self {
             kind: MKMapItemDetailSelectionAccessoryPresentationKind::Automatic,
@@ -42,12 +47,12 @@ impl MKMapItemDetailSelectionAccessoryPresentationStyle {
         }
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.callout`.
     pub const fn callout() -> Self {
-        Self::callout_with_callout_style(
-            MKMapItemDetailSelectionAccessoryCalloutStyle::Automatic,
-        )
+        Self::callout_with_callout_style(MKMapItemDetailSelectionAccessoryCalloutStyle::Automatic)
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.calloutWithCalloutStyle`.
     pub const fn callout_with_callout_style(
         callout_style: MKMapItemDetailSelectionAccessoryCalloutStyle,
     ) -> Self {
@@ -58,6 +63,7 @@ impl MKMapItemDetailSelectionAccessoryPresentationStyle {
         }
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.sheet`.
     pub const fn sheet() -> Self {
         Self {
             kind: MKMapItemDetailSelectionAccessoryPresentationKind::Sheet,
@@ -66,6 +72,7 @@ impl MKMapItemDetailSelectionAccessoryPresentationStyle {
         }
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.openInMaps`.
     pub const fn open_in_maps() -> Self {
         Self {
             kind: MKMapItemDetailSelectionAccessoryPresentationKind::OpenInMaps,
@@ -74,19 +81,23 @@ impl MKMapItemDetailSelectionAccessoryPresentationStyle {
         }
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.kind`.
     pub const fn kind(&self) -> MKMapItemDetailSelectionAccessoryPresentationKind {
         self.kind
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.calloutStyle`.
     pub const fn callout_style(&self) -> MKMapItemDetailSelectionAccessoryCalloutStyle {
         self.callout_style
     }
 
+    /// Wraps `MKMapItemDetailSelectionAccessoryPresentationStyle.hasPresentingViewController`.
     pub const fn has_presenting_view_controller(&self) -> bool {
         self.has_presenting_view_controller
     }
 }
 
+/// Wraps `MKSelectionAccessory`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKSelectionAccessory {
@@ -94,12 +105,14 @@ pub struct MKSelectionAccessory {
 }
 
 impl MKSelectionAccessory {
+    /// Wraps `MKSelectionAccessory.mapItemDetail`.
     pub const fn map_item_detail(
         presentation_style: MKMapItemDetailSelectionAccessoryPresentationStyle,
     ) -> Self {
         Self { presentation_style }
     }
 
+    /// Wraps `MKSelectionAccessory.presentationStyle`.
     pub const fn presentation_style(&self) -> &MKMapItemDetailSelectionAccessoryPresentationStyle {
         &self.presentation_style
     }

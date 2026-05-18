@@ -16,6 +16,7 @@ use crate::overlay::{MKCircle, MKOverlay, MKOverlayLevel, MKPolygon, MKPolyline}
 use crate::point_of_interest::MKPointOfInterestFilter;
 use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
 
+/// Wraps `MKMapType`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKMapType {
@@ -27,6 +28,7 @@ pub enum MKMapType {
     MutedStandard,
 }
 
+/// Wraps `MKFeatureVisibility`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKFeatureVisibility {
@@ -35,6 +37,7 @@ pub enum MKFeatureVisibility {
     Visible,
 }
 
+/// Wraps `MKUserTrackingMode`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKUserTrackingMode {
@@ -101,12 +104,14 @@ struct MKMapViewOptions {
     animated: Option<bool>,
 }
 
+/// Wraps `MKMapView`.
 #[derive(Debug)]
 pub struct MKMapView {
     raw: NonNull<c_void>,
 }
 
 impl MKMapView {
+    /// Creates a wrapper for `MKMapView`.
     pub fn new(size: MKScreenSize) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
         let raw = unsafe { ffi::mk_map_view_new(size.width, size.height, &mut error) };
@@ -133,10 +138,12 @@ impl MKMapView {
         unsafe { unit_result(error, "failed to update MKMapView") }
     }
 
+    /// Wraps `MKMapView.mapType`.
     pub fn map_type(&self) -> Result<MKMapType, MapKitError> {
         Ok(self.state()?.map_type)
     }
 
+    /// Wraps `MKMapView.mapType`.
     pub fn set_map_type(&self, map_type: MKMapType) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             map_type: Some(map_type),
@@ -144,10 +151,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.region`.
     pub fn region(&self) -> Result<MKCoordinateRegion, MapKitError> {
         Ok(self.state()?.region)
     }
 
+    /// Wraps `MKMapView.region`.
     pub fn set_region(
         &self,
         region: MKCoordinateRegion,
@@ -160,10 +169,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.centerCoordinate`.
     pub fn center_coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.center_coordinate)
     }
 
+    /// Wraps `MKMapView.centerCoordinate`.
     pub fn set_center_coordinate(
         &self,
         center_coordinate: MKCoordinate,
@@ -176,6 +187,7 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.regionThatFits`.
     pub fn region_that_fits(
         &self,
         region: MKCoordinateRegion,
@@ -192,10 +204,12 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.visibleMapRect`.
     pub fn visible_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.visible_map_rect)
     }
 
+    /// Wraps `MKMapView.visibleMapRect`.
     pub fn set_visible_map_rect(
         &self,
         visible_map_rect: MKMapRect,
@@ -208,6 +222,7 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.mapRectThatFits`.
     pub fn map_rect_that_fits(&self, map_rect: MKMapRect) -> Result<MKMapRect, MapKitError> {
         let map_rect = json_cstring(&map_rect, "MKMapRect")?;
         let mut error = ptr::null_mut();
@@ -225,10 +240,12 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.camera`.
     pub fn camera(&self) -> Result<MKMapCamera, MapKitError> {
         Ok(self.state()?.camera)
     }
 
+    /// Wraps `MKMapView.camera`.
     pub fn set_camera(&self, camera: MKMapCamera, animated: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             camera: Some(camera),
@@ -237,10 +254,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.cameraZoomRange`.
     pub fn camera_zoom_range(&self) -> Result<Option<MKMapCameraZoomRange>, MapKitError> {
         Ok(self.state()?.camera_zoom_range)
     }
 
+    /// Wraps `MKMapView.cameraZoomRange`.
     pub fn set_camera_zoom_range(
         &self,
         camera_zoom_range: Option<MKMapCameraZoomRange>,
@@ -254,10 +273,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.cameraBoundary`.
     pub fn camera_boundary(&self) -> Result<Option<MKMapCameraBoundary>, MapKitError> {
         Ok(self.state()?.camera_boundary)
     }
 
+    /// Wraps `MKMapView.cameraBoundary`.
     pub fn set_camera_boundary(
         &self,
         camera_boundary: Option<MKMapCameraBoundary>,
@@ -271,10 +292,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.preferredConfiguration`.
     pub fn preferred_configuration(&self) -> Result<Option<MKMapConfiguration>, MapKitError> {
         Ok(self.state()?.preferred_configuration)
     }
 
+    /// Wraps `MKMapView.preferredConfiguration`.
     pub fn set_preferred_configuration(
         &self,
         preferred_configuration: MKMapConfiguration,
@@ -285,6 +308,7 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.convertCoordinateToPoint`.
     pub fn convert_coordinate_to_point(
         &self,
         coordinate: MKCoordinate,
@@ -305,6 +329,7 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.convertPointToCoordinate`.
     pub fn convert_point_to_coordinate(
         &self,
         point: MKScreenPoint,
@@ -325,10 +350,12 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.isZoomEnabled`.
     pub fn is_zoom_enabled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.zoom_enabled)
     }
 
+    /// Wraps `MKMapView.zoomEnabled`.
     pub fn set_zoom_enabled(&self, zoom_enabled: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             zoom_enabled: Some(zoom_enabled),
@@ -336,10 +363,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.isScrollEnabled`.
     pub fn is_scroll_enabled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.scroll_enabled)
     }
 
+    /// Wraps `MKMapView.scrollEnabled`.
     pub fn set_scroll_enabled(&self, scroll_enabled: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             scroll_enabled: Some(scroll_enabled),
@@ -347,10 +376,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.isRotateEnabled`.
     pub fn is_rotate_enabled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.rotate_enabled)
     }
 
+    /// Wraps `MKMapView.rotateEnabled`.
     pub fn set_rotate_enabled(&self, rotate_enabled: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             rotate_enabled: Some(rotate_enabled),
@@ -358,10 +389,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.isPitchEnabled`.
     pub fn is_pitch_enabled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.pitch_enabled)
     }
 
+    /// Wraps `MKMapView.pitchEnabled`.
     pub fn set_pitch_enabled(&self, pitch_enabled: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             pitch_enabled: Some(pitch_enabled),
@@ -369,10 +402,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.showsZoomControls`.
     pub fn shows_zoom_controls(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.shows_zoom_controls)
     }
 
+    /// Wraps `MKMapView.showsZoomControls`.
     pub fn set_shows_zoom_controls(&self, shows_zoom_controls: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             shows_zoom_controls: Some(shows_zoom_controls),
@@ -380,10 +415,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.showsCompass`.
     pub fn shows_compass(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.shows_compass)
     }
 
+    /// Wraps `MKMapView.showsCompass`.
     pub fn set_shows_compass(&self, shows_compass: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             shows_compass: Some(shows_compass),
@@ -391,10 +428,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.showsScale`.
     pub fn shows_scale(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.shows_scale)
     }
 
+    /// Wraps `MKMapView.showsScale`.
     pub fn set_shows_scale(&self, shows_scale: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             shows_scale: Some(shows_scale),
@@ -402,10 +441,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.showsPointsOfInterest`.
     pub fn shows_points_of_interest(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.shows_points_of_interest)
     }
 
+    /// Wraps `MKMapView.showsPointsOfInterest`.
     pub fn set_shows_points_of_interest(
         &self,
         shows_points_of_interest: bool,
@@ -416,6 +457,7 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.pointOfInterestFilter`.
     pub fn set_point_of_interest_filter(
         &self,
         point_of_interest_filter: Option<MKPointOfInterestFilter>,
@@ -427,14 +469,17 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.showsUserLocation`.
     pub fn shows_user_location(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.shows_user_location)
     }
 
+    /// Wraps `MKMapView.isUserLocationVisible`.
     pub fn is_user_location_visible(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.user_location_visible)
     }
 
+    /// Wraps `MKMapView.userLocation`.
     pub fn user_location(&self) -> Result<MKUserLocation, MapKitError> {
         let mut error = ptr::null_mut();
         let raw = unsafe { ffi::mk_map_view_user_location(self.raw.as_ptr(), &mut error) };
@@ -447,6 +492,7 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.defaultAnnotationViewReuseIdentifier`.
     pub fn default_annotation_view_reuse_identifier() -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
@@ -463,6 +509,7 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.defaultClusterAnnotationViewReuseIdentifier`.
     pub fn default_cluster_annotation_view_reuse_identifier() -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
@@ -480,6 +527,7 @@ impl MKMapView {
         }
     }
 
+    /// Wraps `MKMapView.showsUserLocation`.
     pub fn set_shows_user_location(&self, shows_user_location: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMapViewOptions {
             shows_user_location: Some(shows_user_location),
@@ -487,10 +535,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.userTrackingMode`.
     pub fn user_tracking_mode(&self) -> Result<MKUserTrackingMode, MapKitError> {
         Ok(self.state()?.user_tracking_mode)
     }
 
+    /// Wraps `MKMapView.userTrackingMode`.
     pub fn set_user_tracking_mode(
         &self,
         user_tracking_mode: MKUserTrackingMode,
@@ -503,10 +553,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.showsUserTrackingButton`.
     pub fn shows_user_tracking_button(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.shows_user_tracking_button)
     }
 
+    /// Wraps `MKMapView.showsUserTrackingButton`.
     pub fn set_shows_user_tracking_button(
         &self,
         shows_user_tracking_button: bool,
@@ -517,10 +569,12 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.pitchButtonVisibility`.
     pub fn pitch_button_visibility(&self) -> Result<Option<MKFeatureVisibility>, MapKitError> {
         Ok(self.state()?.pitch_button_visibility)
     }
 
+    /// Wraps `MKMapView.pitchButtonVisibility`.
     pub fn set_pitch_button_visibility(
         &self,
         pitch_button_visibility: MKFeatureVisibility,
@@ -531,14 +585,17 @@ impl MKMapView {
         })
     }
 
+    /// Wraps `MKMapView.annotationCount`.
     pub fn annotation_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.annotation_count)
     }
 
+    /// Wraps `MKMapView.overlayCount`.
     pub fn overlay_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.overlay_count)
     }
 
+    /// Wraps `MKMapView.addAnnotation`.
     pub fn add_annotation<A: MKAnnotation + ?Sized>(
         &self,
         annotation: &A,
@@ -554,6 +611,7 @@ impl MKMapView {
         unsafe { unit_result(error, "failed to add MKAnnotation") }
     }
 
+    /// Wraps `MKMapView.removeAnnotation`.
     pub fn remove_annotation<A: MKAnnotation + ?Sized>(
         &self,
         annotation: &A,
@@ -569,10 +627,12 @@ impl MKMapView {
         unsafe { unit_result(error, "failed to remove MKAnnotation") }
     }
 
+    /// Wraps `MKMapView.addPointAnnotation`.
     pub fn add_point_annotation(&self, annotation: &MKPointAnnotation) -> Result<(), MapKitError> {
         self.add_annotation(annotation)
     }
 
+    /// Wraps `MKMapView.removePointAnnotation`.
     pub fn remove_point_annotation(
         &self,
         annotation: &MKPointAnnotation,
@@ -580,6 +640,7 @@ impl MKMapView {
         self.remove_annotation(annotation)
     }
 
+    /// Wraps `MKMapView.addClusterAnnotation`.
     pub fn add_cluster_annotation(
         &self,
         annotation: &MKClusterAnnotation,
@@ -587,6 +648,7 @@ impl MKMapView {
         self.add_annotation(annotation)
     }
 
+    /// Wraps `MKMapView.removeClusterAnnotation`.
     pub fn remove_cluster_annotation(
         &self,
         annotation: &MKClusterAnnotation,
@@ -594,6 +656,7 @@ impl MKMapView {
         self.remove_annotation(annotation)
     }
 
+    /// Wraps `MKMapView.addOverlay`.
     pub fn add_overlay<O: MKOverlay + ?Sized>(
         &self,
         overlay: &O,
@@ -612,6 +675,7 @@ impl MKMapView {
         unsafe { unit_result(error, "failed to add MKOverlay") }
     }
 
+    /// Wraps `MKMapView.removeOverlay`.
     pub fn remove_overlay<O: MKOverlay + ?Sized>(&self, overlay: &O) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe {
@@ -624,14 +688,17 @@ impl MKMapView {
         unsafe { unit_result(error, "failed to remove MKOverlay") }
     }
 
+    /// Wraps `MKMapView.addCircle`.
     pub fn add_circle(&self, circle: &MKCircle, level: MKOverlayLevel) -> Result<(), MapKitError> {
         self.add_overlay(circle, level)
     }
 
+    /// Wraps `MKMapView.removeCircle`.
     pub fn remove_circle(&self, circle: &MKCircle) -> Result<(), MapKitError> {
         self.remove_overlay(circle)
     }
 
+    /// Wraps `MKMapView.addPolyline`.
     pub fn add_polyline(
         &self,
         polyline: &MKPolyline,
@@ -640,10 +707,12 @@ impl MKMapView {
         self.add_overlay(polyline, level)
     }
 
+    /// Wraps `MKMapView.removePolyline`.
     pub fn remove_polyline(&self, polyline: &MKPolyline) -> Result<(), MapKitError> {
         self.remove_overlay(polyline)
     }
 
+    /// Wraps `MKMapView.addPolygon`.
     pub fn add_polygon(
         &self,
         polygon: &MKPolygon,
@@ -652,6 +721,7 @@ impl MKMapView {
         self.add_overlay(polygon, level)
     }
 
+    /// Wraps `MKMapView.removePolygon`.
     pub fn remove_polygon(&self, polygon: &MKPolygon) -> Result<(), MapKitError> {
         self.remove_overlay(polygon)
     }

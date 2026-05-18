@@ -7,13 +7,17 @@ use crate::error::MapKitError;
 use crate::ffi;
 use crate::private::{json_cstring, parse_json_ptr};
 
+/// Wraps `MKCoordinate`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MKCoordinate {
+    /// Wraps `MKCoordinate.latitude`.
     pub latitude: f64,
+    /// Wraps `MKCoordinate.longitude`.
     pub longitude: f64,
 }
 
 impl MKCoordinate {
+    /// Creates a wrapper for `MKCoordinate`.
     pub const fn new(latitude: f64, longitude: f64) -> Self {
         Self {
             latitude,
@@ -22,14 +26,18 @@ impl MKCoordinate {
     }
 }
 
+/// Wraps `MKCoordinateSpan`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKCoordinateSpan {
+    /// Wraps `MKCoordinateSpan.latitudeDelta`.
     pub latitude_delta: f64,
+    /// Wraps `MKCoordinateSpan.longitudeDelta`.
     pub longitude_delta: f64,
 }
 
 impl MKCoordinateSpan {
+    /// Creates a wrapper for `MKCoordinateSpan`.
     pub const fn new(latitude_delta: f64, longitude_delta: f64) -> Self {
         Self {
             latitude_delta,
@@ -38,19 +46,24 @@ impl MKCoordinateSpan {
     }
 }
 
+/// Wraps `MKCoordinateRegion`.
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKCoordinateRegion {
+    /// Wraps `MKCoordinateRegion.center`.
     pub center: MKCoordinate,
+    /// Wraps `MKCoordinateRegion.span`.
     pub span: MKCoordinateSpan,
 }
 
 impl MKCoordinateRegion {
+    /// Creates a wrapper for `MKCoordinateRegion`.
     pub const fn new(center: MKCoordinate, span: MKCoordinateSpan) -> Self {
         Self { center, span }
     }
 
+    /// Wraps `MKCoordinateRegion.distance`.
     pub fn with_distance(
         center: MKCoordinate,
         latitudinal_meters: f64,
@@ -75,6 +88,7 @@ impl MKCoordinateRegion {
         }
     }
 
+    /// Wraps `MKCoordinateRegion.fromMapRect`.
     pub fn from_map_rect(map_rect: MKMapRect) -> Result<Self, MapKitError> {
         let map_rect_json = json_cstring(&map_rect, "MKMapRect")?;
         let mut error = ptr::null_mut();
@@ -91,48 +105,49 @@ impl MKCoordinateRegion {
     }
 }
 
+/// Wraps `MKMapPoint`.
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MKMapPoint {
+    /// Wraps `MKMapPoint.x`.
     pub x: f64,
+    /// Wraps `MKMapPoint.y`.
     pub y: f64,
 }
 
 impl MKMapPoint {
+    /// Creates a wrapper for `MKMapPoint`.
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 
+    /// Wraps `MKMapPoint.fromCoordinate`.
     pub fn from_coordinate(coordinate: MKCoordinate) -> Result<Self, MapKitError> {
         let coordinate_json = json_cstring(&coordinate, "MKCoordinate")?;
         let mut error = ptr::null_mut();
-        let payload = unsafe {
-            ffi::mk_map_point_for_coordinate_json(coordinate_json.as_ptr(), &mut error)
-        };
+        let payload =
+            unsafe { ffi::mk_map_point_for_coordinate_json(coordinate_json.as_ptr(), &mut error) };
         if payload.is_null() {
-            Err(unsafe {
-                MapKitError::from_error_ptr(error, "MKMapPoint for coordinate failed")
-            })
+            Err(unsafe { MapKitError::from_error_ptr(error, "MKMapPoint for coordinate failed") })
         } else {
             unsafe { parse_json_ptr(payload, "MKMapPoint") }
         }
     }
 
+    /// Wraps `MKMapPoint.coordinate`.
     pub fn coordinate(self) -> Result<MKCoordinate, MapKitError> {
         let map_point_json = json_cstring(&self, "MKMapPoint")?;
         let mut error = ptr::null_mut();
-        let payload = unsafe {
-            ffi::mk_coordinate_for_map_point_json(map_point_json.as_ptr(), &mut error)
-        };
+        let payload =
+            unsafe { ffi::mk_coordinate_for_map_point_json(map_point_json.as_ptr(), &mut error) };
         if payload.is_null() {
-            Err(unsafe {
-                MapKitError::from_error_ptr(error, "coordinate for MKMapPoint failed")
-            })
+            Err(unsafe { MapKitError::from_error_ptr(error, "coordinate for MKMapPoint failed") })
         } else {
             unsafe { parse_json_ptr(payload, "MKCoordinate") }
         }
     }
 
+    /// Wraps `MKMapPoint.distanceTo`.
     pub fn distance_to(self, other: Self) -> Result<f64, MapKitError> {
         let first_map_point_json = json_cstring(&self, "first MKMapPoint")?;
         let second_map_point_json = json_cstring(&other, "second MKMapPoint")?;
@@ -147,56 +162,71 @@ impl MKMapPoint {
         scalar_result(distance, error, "meters between MKMapPoints failed")
     }
 
+    /// Wraps `MKMapPoint.equalTo`.
     pub fn equal_to(self, other: Self) -> bool {
         self == other
     }
 
+    /// Wraps `MKMapPoint.stringRepresentation`.
     pub fn string_representation(self) -> String {
         format!("{{{:.1}, {:.1}}}", self.x, self.y)
     }
 }
 
+/// Wraps `MKMapSize`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MKMapSize {
+    /// Wraps `MKMapSize.width`.
     pub width: f64,
+    /// Wraps `MKMapSize.height`.
     pub height: f64,
 }
 
 impl MKMapSize {
+    /// Creates a wrapper for `MKMapSize`.
     pub const fn new(width: f64, height: f64) -> Self {
         Self { width, height }
     }
 
+    /// Wraps `MKMapSize.world`.
     pub fn world() -> Result<Self, MapKitError> {
         geometry_constant(MKGeometryConstantKind::MapSizeWorld, "MKMapSizeWorld")
     }
 
+    /// Wraps `MKMapSize.equalTo`.
     pub fn equal_to(self, other: Self) -> bool {
         self == other
     }
 
+    /// Wraps `MKMapSize.stringRepresentation`.
     pub fn string_representation(self) -> String {
         format!("{{{:.1}, {:.1}}}", self.width, self.height)
     }
 }
 
+/// Wraps `MKMapRect`.
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKMapRect {
+    /// Wraps `MKMapRect.origin`.
     pub origin: MKMapPoint,
+    /// Wraps `MKMapRect.size`.
     pub size: MKMapSize,
 }
 
 impl MKMapRect {
+    /// Creates a wrapper for `MKMapRect`.
     pub const fn new(origin: MKMapPoint, size: MKMapSize) -> Self {
         Self { origin, size }
     }
 
+    /// Wraps `MKMapRect.world`.
     pub fn world() -> Result<Self, MapKitError> {
         geometry_constant(MKGeometryConstantKind::MapRectWorld, "MKMapRectWorld")
     }
 
+    /// Wraps `MKMapRect.null`.
     pub const fn null() -> Self {
         Self {
             origin: MKMapPoint::new(f64::INFINITY, f64::INFINITY),
@@ -204,50 +234,62 @@ impl MKMapRect {
         }
     }
 
+    /// Wraps `MKMapRect.minX`.
     pub const fn min_x(self) -> f64 {
         self.origin.x
     }
 
+    /// Wraps `MKMapRect.minY`.
     pub const fn min_y(self) -> f64 {
         self.origin.y
     }
 
+    /// Wraps `MKMapRect.midX`.
     pub const fn mid_x(self) -> f64 {
         self.origin.x + self.size.width / 2.0
     }
 
+    /// Wraps `MKMapRect.midY`.
     pub const fn mid_y(self) -> f64 {
         self.origin.y + self.size.height / 2.0
     }
 
+    /// Wraps `MKMapRect.maxX`.
     pub const fn max_x(self) -> f64 {
         self.origin.x + self.size.width
     }
 
+    /// Wraps `MKMapRect.maxY`.
     pub const fn max_y(self) -> f64 {
         self.origin.y + self.size.height
     }
 
+    /// Wraps `MKMapRect.width`.
     pub const fn width(self) -> f64 {
         self.size.width
     }
 
+    /// Wraps `MKMapRect.height`.
     pub const fn height(self) -> f64 {
         self.size.height
     }
 
+    /// Wraps `MKMapRect.equalTo`.
     pub fn equal_to(self, other: Self) -> bool {
         self == other
     }
 
+    /// Wraps `MKMapRect.isNull`.
     pub fn is_null(self) -> bool {
         self.origin.equal_to(Self::null().origin)
     }
 
+    /// Wraps `MKMapRect.isEmpty`.
     pub fn is_empty(self) -> bool {
         self.is_null() || self.size.width == 0.0 || self.size.height == 0.0
     }
 
+    /// Wraps `MKMapRect.union`.
     pub fn union(self, other: Self) -> Result<Self, MapKitError> {
         map_rect_binary_transform(
             self,
@@ -257,6 +299,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.intersection`.
     pub fn intersection(self, other: Self) -> Result<Self, MapKitError> {
         map_rect_binary_transform(
             self,
@@ -266,6 +309,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.inset`.
     pub fn inset(self, dx: f64, dy: f64) -> Result<Self, MapKitError> {
         map_rect_delta_transform(
             self,
@@ -276,6 +320,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.offset`.
     pub fn offset(self, dx: f64, dy: f64) -> Result<Self, MapKitError> {
         map_rect_delta_transform(
             self,
@@ -286,7 +331,12 @@ impl MKMapRect {
         )
     }
 
-    pub fn divide(self, amount: f64, edge: MKMapRectEdge) -> Result<MKMapRectDivision, MapKitError> {
+    /// Wraps `MKMapRect.divide`.
+    pub fn divide(
+        self,
+        amount: f64,
+        edge: MKMapRectEdge,
+    ) -> Result<MKMapRectDivision, MapKitError> {
         let rect_json = json_cstring(&self, "MKMapRect")?;
         let mut error = ptr::null_mut();
         let payload = unsafe {
@@ -308,6 +358,7 @@ impl MKMapRect {
         }
     }
 
+    /// Wraps `MKMapRect.containsPoint`.
     pub fn contains_point(self, point: MKMapPoint) -> Result<bool, MapKitError> {
         map_rect_predicate(
             self,
@@ -317,6 +368,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.containsRect`.
     pub fn contains_rect(self, other: Self) -> Result<bool, MapKitError> {
         map_rect_predicate(
             self,
@@ -326,6 +378,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.intersectsRect`.
     pub fn intersects_rect(self, other: Self) -> Result<bool, MapKitError> {
         map_rect_predicate(
             self,
@@ -335,6 +388,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.spans180thMeridian`.
     pub fn spans_180th_meridian(self) -> Result<bool, MapKitError> {
         map_rect_predicate::<Self>(
             self,
@@ -344,6 +398,7 @@ impl MKMapRect {
         )
     }
 
+    /// Wraps `MKMapRect.remainder`.
     pub fn remainder(self) -> Result<Self, MapKitError> {
         let rect_json = json_cstring(&self, "MKMapRect")?;
         let mut error = ptr::null_mut();
@@ -366,6 +421,7 @@ impl MKMapRect {
         }
     }
 
+    /// Wraps `MKMapRect.stringRepresentation`.
     pub fn string_representation(self) -> String {
         format!(
             "{{{}, {}}}",
@@ -375,6 +431,7 @@ impl MKMapRect {
     }
 }
 
+/// Wraps `MKMapRectEdge`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[repr(i32)]
@@ -385,32 +442,43 @@ pub enum MKMapRectEdge {
     MaxY = 3,
 }
 
+/// Wraps `MKMapRectDivision`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKMapRectDivision {
+    /// Wraps `MKMapRectDivision.slice`.
     pub slice: MKMapRect,
+    /// Wraps `MKMapRectDivision.remainder`.
     pub remainder: MKMapRect,
 }
 
+/// Wraps `MKScreenPoint`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MKScreenPoint {
+    /// Wraps `MKScreenPoint.x`.
     pub x: f64,
+    /// Wraps `MKScreenPoint.y`.
     pub y: f64,
 }
 
 impl MKScreenPoint {
+    /// Creates a wrapper for `MKScreenPoint`.
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 }
 
+/// Wraps `MKScreenSize`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MKScreenSize {
+    /// Wraps `MKScreenSize.width`.
     pub width: f64,
+    /// Wraps `MKScreenSize.height`.
     pub height: f64,
 }
 
 impl MKScreenSize {
+    /// Creates a wrapper for `MKScreenSize`.
     pub const fn new(width: f64, height: f64) -> Self {
         Self { width, height }
     }
@@ -482,7 +550,9 @@ fn map_rect_predicate<T: Serialize>(
     let value = unsafe {
         ffi::mk_map_rect_predicate_json(
             rect_json.as_ptr(),
-            auxiliary_json.as_ref().map_or(ptr::null(), |value| value.as_ptr()),
+            auxiliary_json
+                .as_ref()
+                .map_or(ptr::null(), |value| value.as_ptr()),
             kind as i32,
             &mut error,
         )
@@ -550,26 +620,31 @@ fn map_rect_delta_transform(
     }
 }
 
+/// Wraps `MKMapPointsPerMeterAtLatitude`.
 pub fn mk_map_points_per_meter_at_latitude(latitude: f64) -> Result<f64, MapKitError> {
     let mut error = ptr::null_mut();
     let value = unsafe { ffi::mk_map_points_per_meter_at_latitude(latitude, &mut error) };
     scalar_result(value, error, "MKMapPointsPerMeterAtLatitude failed")
 }
 
+/// Wraps `MKMetersPerMapPointAtLatitude`.
 pub fn mk_meters_per_map_point_at_latitude(latitude: f64) -> Result<f64, MapKitError> {
     let mut error = ptr::null_mut();
     let value = unsafe { ffi::mk_meters_per_map_point_at_latitude(latitude, &mut error) };
     scalar_result(value, error, "MKMetersPerMapPointAtLatitude failed")
 }
 
+/// Wraps `NSStringFromMKMapPoint`.
 pub fn mk_string_from_map_point(point: MKMapPoint) -> String {
     point.string_representation()
 }
 
+/// Wraps `NSStringFromMKMapSize`.
 pub fn mk_string_from_map_size(size: MKMapSize) -> String {
     size.string_representation()
 }
 
+/// Wraps `NSStringFromMKMapRect`.
 pub fn mk_string_from_map_rect(rect: MKMapRect) -> String {
     rect.string_representation()
 }

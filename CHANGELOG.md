@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4] - 2026-05-18
+
+### Changed
+
+- Added `///` docs across the public Rust surface in `src/` (excluding the FFI layer), referencing the corresponding MapKit framework APIs and raising rustdoc coverage to 88.8%.
+- Documented the root module exports, public wrapper types, associated constants, fields, constructors, getters, setters, and re-export helper modules used by the crate.
+
 ## [0.3.3] - 2026-05-18
 
 ### Changed

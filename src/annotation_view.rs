@@ -11,6 +11,7 @@ use crate::geometry::{MKCoordinate, MKScreenPoint};
 use crate::map_view::MKFeatureVisibility;
 use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
 
+/// Wraps `MKAnnotation`.
 pub trait MKAnnotation {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError>;
     fn title(&self) -> Result<Option<String>, MapKitError>;
@@ -55,6 +56,7 @@ impl MKAnnotation for MKClusterAnnotation {
     }
 }
 
+/// Wraps `MKAnnotationViewCollisionMode`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKAnnotationViewCollisionMode {
@@ -63,6 +65,7 @@ pub enum MKAnnotationViewCollisionMode {
     None,
 }
 
+/// Wraps `MKAnnotationViewDragState`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKAnnotationViewDragState {
@@ -73,24 +76,33 @@ pub enum MKAnnotationViewDragState {
     Ending,
 }
 
+/// Wraps `MKAnnotationViewZPriority`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct MKAnnotationViewZPriority(pub f32);
 
 impl MKAnnotationViewZPriority {
+    /// Wraps `MKAnnotationViewZPriority.max`.
     pub const MAX: Self = Self(1000.0);
+    /// Wraps `MKAnnotationViewZPriority.defaultSelected`.
     pub const DEFAULT_SELECTED: Self = Self(1000.0);
+    /// Wraps `MKAnnotationViewZPriority.defaultUnselected`.
     pub const DEFAULT_UNSELECTED: Self = Self(500.0);
+    /// Wraps `MKAnnotationViewZPriority.min`.
     pub const MIN: Self = Self(0.0);
 }
 
+/// Wraps `MKFeatureDisplayPriority`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct MKFeatureDisplayPriority(pub f32);
 
 impl MKFeatureDisplayPriority {
+    /// Wraps `MKFeatureDisplayPriority.required`.
     pub const REQUIRED: Self = Self(1000.0);
+    /// Wraps `MKFeatureDisplayPriority.defaultHigh`.
     pub const DEFAULT_HIGH: Self = Self(750.0);
+    /// Wraps `MKFeatureDisplayPriority.defaultLow`.
     pub const DEFAULT_LOW: Self = Self(250.0);
 }
 
@@ -140,12 +152,14 @@ struct MKAnnotationViewOptions {
     collision_mode: Option<MKAnnotationViewCollisionMode>,
 }
 
+/// Wraps `MKAnnotationView`.
 #[derive(Debug)]
 pub struct MKAnnotationView {
     raw: NonNull<c_void>,
 }
 
 impl MKAnnotationView {
+    /// Creates a wrapper for `MKAnnotationView`.
     pub fn new<A: MKAnnotation + ?Sized>(
         annotation: Option<&A>,
         reuse_identifier: Option<&str>,
@@ -194,6 +208,7 @@ impl MKAnnotationView {
         unsafe { unit_result(error, "failed to update MKAnnotationView") }
     }
 
+    /// Wraps `MKAnnotationView.calloutInfoDidChangeNotification`.
     pub fn callout_info_did_change_notification() -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
@@ -210,22 +225,27 @@ impl MKAnnotationView {
         }
     }
 
+    /// Wraps `MKAnnotationView.reuseIdentifier`.
     pub fn reuse_identifier(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.reuse_identifier)
     }
 
+    /// Wraps `MKAnnotationView.annotationTitle`.
     pub fn annotation_title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.annotation_title)
     }
 
+    /// Wraps `MKAnnotationView.annotationSubtitle`.
     pub fn annotation_subtitle(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.annotation_subtitle)
     }
 
+    /// Wraps `MKAnnotationView.centerOffset`.
     pub fn center_offset(&self) -> Result<MKScreenPoint, MapKitError> {
         Ok(self.state()?.center_offset)
     }
 
+    /// Wraps `MKAnnotationView.centerOffset`.
     pub fn set_center_offset(&self, center_offset: MKScreenPoint) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             center_offset: Some(center_offset),
@@ -233,10 +253,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.calloutOffset`.
     pub fn callout_offset(&self) -> Result<MKScreenPoint, MapKitError> {
         Ok(self.state()?.callout_offset)
     }
 
+    /// Wraps `MKAnnotationView.calloutOffset`.
     pub fn set_callout_offset(&self, callout_offset: MKScreenPoint) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             callout_offset: Some(callout_offset),
@@ -244,10 +266,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.leftCalloutOffset`.
     pub fn left_callout_offset(&self) -> Result<MKScreenPoint, MapKitError> {
         Ok(self.state()?.left_callout_offset)
     }
 
+    /// Wraps `MKAnnotationView.leftCalloutOffset`.
     pub fn set_left_callout_offset(
         &self,
         left_callout_offset: MKScreenPoint,
@@ -258,10 +282,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.rightCalloutOffset`.
     pub fn right_callout_offset(&self) -> Result<MKScreenPoint, MapKitError> {
         Ok(self.state()?.right_callout_offset)
     }
 
+    /// Wraps `MKAnnotationView.rightCalloutOffset`.
     pub fn set_right_callout_offset(
         &self,
         right_callout_offset: MKScreenPoint,
@@ -272,10 +298,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.isEnabled`.
     pub fn is_enabled(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.enabled)
     }
 
+    /// Wraps `MKAnnotationView.enabled`.
     pub fn set_enabled(&self, enabled: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             enabled: Some(enabled),
@@ -283,10 +311,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.isHighlighted`.
     pub fn is_highlighted(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.highlighted)
     }
 
+    /// Wraps `MKAnnotationView.highlighted`.
     pub fn set_highlighted(&self, highlighted: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             highlighted: Some(highlighted),
@@ -294,10 +324,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.isSelected`.
     pub fn is_selected(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.selected)
     }
 
+    /// Wraps `MKAnnotationView.selected`.
     pub fn set_selected(&self, selected: bool, animated: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             selected: Some(selected),
@@ -306,10 +338,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.canShowCallout`.
     pub fn can_show_callout(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_show_callout)
     }
 
+    /// Wraps `MKAnnotationView.canShowCallout`.
     pub fn set_can_show_callout(&self, can_show_callout: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             can_show_callout: Some(can_show_callout),
@@ -317,10 +351,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.isDraggable`.
     pub fn is_draggable(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.draggable)
     }
 
+    /// Wraps `MKAnnotationView.draggable`.
     pub fn set_draggable(&self, draggable: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             draggable: Some(draggable),
@@ -328,10 +364,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.dragState`.
     pub fn drag_state(&self) -> Result<MKAnnotationViewDragState, MapKitError> {
         Ok(self.state()?.drag_state)
     }
 
+    /// Wraps `MKAnnotationView.dragState`.
     pub fn set_drag_state(
         &self,
         drag_state: MKAnnotationViewDragState,
@@ -344,10 +382,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.clusteringIdentifier`.
     pub fn clustering_identifier(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.clustering_identifier)
     }
 
+    /// Wraps `MKAnnotationView.clusteringIdentifier`.
     pub fn set_clustering_identifier(
         &self,
         clustering_identifier: Option<&str>,
@@ -360,10 +400,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.displayPriority`.
     pub fn display_priority(&self) -> Result<MKFeatureDisplayPriority, MapKitError> {
         Ok(self.state()?.display_priority)
     }
 
+    /// Wraps `MKAnnotationView.displayPriority`.
     pub fn set_display_priority(
         &self,
         display_priority: MKFeatureDisplayPriority,
@@ -374,10 +416,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.zPriority`.
     pub fn z_priority(&self) -> Result<MKAnnotationViewZPriority, MapKitError> {
         Ok(self.state()?.z_priority)
     }
 
+    /// Wraps `MKAnnotationView.zPriority`.
     pub fn set_z_priority(&self, z_priority: MKAnnotationViewZPriority) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             z_priority: Some(z_priority),
@@ -385,10 +429,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.selectedZPriority`.
     pub fn selected_z_priority(&self) -> Result<MKAnnotationViewZPriority, MapKitError> {
         Ok(self.state()?.selected_z_priority)
     }
 
+    /// Wraps `MKAnnotationView.selectedZPriority`.
     pub fn set_selected_z_priority(
         &self,
         selected_z_priority: MKAnnotationViewZPriority,
@@ -399,10 +445,12 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.collisionMode`.
     pub fn collision_mode(&self) -> Result<MKAnnotationViewCollisionMode, MapKitError> {
         Ok(self.state()?.collision_mode)
     }
 
+    /// Wraps `MKAnnotationView.collisionMode`.
     pub fn set_collision_mode(
         &self,
         collision_mode: MKAnnotationViewCollisionMode,
@@ -413,12 +461,14 @@ impl MKAnnotationView {
         })
     }
 
+    /// Wraps `MKAnnotationView.prepareForReuse`.
     pub fn prepare_for_reuse(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe { ffi::mk_annotation_view_prepare_for_reuse(self.raw.as_ptr(), &mut error) };
         unsafe { unit_result(error, "failed to prepare MKAnnotationView for reuse") }
     }
 
+    /// Wraps `MKAnnotationView.prepareForDisplay`.
     pub fn prepare_for_display(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe { ffi::mk_annotation_view_prepare_for_display(self.raw.as_ptr(), &mut error) };
@@ -452,12 +502,14 @@ struct MKMarkerAnnotationViewOptions {
     animates_when_added: Option<bool>,
 }
 
+/// Wraps `MKMarkerAnnotationView`.
 #[derive(Debug)]
 pub struct MKMarkerAnnotationView {
     raw: NonNull<c_void>,
 }
 
 impl MKMarkerAnnotationView {
+    /// Creates a wrapper for `MKMarkerAnnotationView`.
     pub fn new<A: MKAnnotation + ?Sized>(
         annotation: Option<&A>,
         reuse_identifier: Option<&str>,
@@ -507,14 +559,17 @@ impl MKMarkerAnnotationView {
         unsafe { unit_result(error, "failed to update MKMarkerAnnotationView") }
     }
 
+    /// Wraps `MKMarkerAnnotationView.annotationTitle`.
     pub fn annotation_title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.base.annotation_title)
     }
 
+    /// Wraps `MKMarkerAnnotationView.titleVisibility`.
     pub fn title_visibility(&self) -> Result<MKFeatureVisibility, MapKitError> {
         Ok(self.state()?.title_visibility)
     }
 
+    /// Wraps `MKMarkerAnnotationView.titleVisibility`.
     pub fn set_title_visibility(
         &self,
         title_visibility: MKFeatureVisibility,
@@ -525,10 +580,12 @@ impl MKMarkerAnnotationView {
         })
     }
 
+    /// Wraps `MKMarkerAnnotationView.subtitleVisibility`.
     pub fn subtitle_visibility(&self) -> Result<MKFeatureVisibility, MapKitError> {
         Ok(self.state()?.subtitle_visibility)
     }
 
+    /// Wraps `MKMarkerAnnotationView.subtitleVisibility`.
     pub fn set_subtitle_visibility(
         &self,
         subtitle_visibility: MKFeatureVisibility,
@@ -539,10 +596,12 @@ impl MKMarkerAnnotationView {
         })
     }
 
+    /// Wraps `MKMarkerAnnotationView.glyphText`.
     pub fn glyph_text(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.glyph_text)
     }
 
+    /// Wraps `MKMarkerAnnotationView.glyphText`.
     pub fn set_glyph_text(&self, glyph_text: Option<&str>) -> Result<(), MapKitError> {
         self.apply_options(&MKMarkerAnnotationViewOptions {
             glyph_text_present: true,
@@ -551,10 +610,12 @@ impl MKMarkerAnnotationView {
         })
     }
 
+    /// Wraps `MKMarkerAnnotationView.animatesWhenAdded`.
     pub fn animates_when_added(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.animates_when_added)
     }
 
+    /// Wraps `MKMarkerAnnotationView.animatesWhenAdded`.
     pub fn set_animates_when_added(&self, animates_when_added: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKMarkerAnnotationViewOptions {
             animates_when_added: Some(animates_when_added),
@@ -569,6 +630,7 @@ impl Drop for MKMarkerAnnotationView {
     }
 }
 
+/// Wraps `MKPinAnnotationColor`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKPinAnnotationColor {
@@ -592,12 +654,14 @@ struct MKPinAnnotationViewOptions {
     pin_color: Option<MKPinAnnotationColor>,
 }
 
+/// Wraps `MKPinAnnotationView`.
 #[derive(Debug)]
 pub struct MKPinAnnotationView {
     raw: NonNull<c_void>,
 }
 
 impl MKPinAnnotationView {
+    /// Creates a wrapper for `MKPinAnnotationView`.
     pub fn new<A: MKAnnotation + ?Sized>(
         annotation: Option<&A>,
         reuse_identifier: Option<&str>,
@@ -647,22 +711,27 @@ impl MKPinAnnotationView {
         unsafe { unit_result(error, "failed to update MKPinAnnotationView") }
     }
 
+    /// Wraps `MKPinAnnotationView.reuseIdentifier`.
     pub fn reuse_identifier(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.base.reuse_identifier)
     }
 
+    /// Wraps `MKPinAnnotationView.annotationTitle`.
     pub fn annotation_title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.base.annotation_title)
     }
 
+    /// Wraps `MKPinAnnotationView.annotationSubtitle`.
     pub fn annotation_subtitle(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.base.annotation_subtitle)
     }
 
+    /// Wraps `MKPinAnnotationView.animatesDrop`.
     pub fn animates_drop(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.animates_drop)
     }
 
+    /// Wraps `MKPinAnnotationView.animatesDrop`.
     pub fn set_animates_drop(&self, animates_drop: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKPinAnnotationViewOptions {
             animates_drop: Some(animates_drop),
@@ -670,10 +739,12 @@ impl MKPinAnnotationView {
         })
     }
 
+    /// Wraps `MKPinAnnotationView.pinColor`.
     pub fn pin_color(&self) -> Result<MKPinAnnotationColor, MapKitError> {
         Ok(self.state()?.pin_color)
     }
 
+    /// Wraps `MKPinAnnotationView.pinColor`.
     pub fn set_pin_color(&self, pin_color: MKPinAnnotationColor) -> Result<(), MapKitError> {
         self.apply_options(&MKPinAnnotationViewOptions {
             pin_color: Some(pin_color),
@@ -688,12 +759,14 @@ impl Drop for MKPinAnnotationView {
     }
 }
 
+/// Wraps `MKUserLocationView`.
 #[derive(Debug)]
 pub struct MKUserLocationView {
     raw: NonNull<c_void>,
 }
 
 impl MKUserLocationView {
+    /// Creates a wrapper for `MKUserLocationView`.
     pub fn new<A: MKAnnotation + ?Sized>(
         annotation: Option<&A>,
         reuse_identifier: Option<&str>,
@@ -742,22 +815,27 @@ impl MKUserLocationView {
         unsafe { unit_result(error, "failed to update MKUserLocationView") }
     }
 
+    /// Wraps `MKUserLocationView.reuseIdentifier`.
     pub fn reuse_identifier(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.reuse_identifier)
     }
 
+    /// Wraps `MKUserLocationView.annotationTitle`.
     pub fn annotation_title(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.annotation_title)
     }
 
+    /// Wraps `MKUserLocationView.annotationSubtitle`.
     pub fn annotation_subtitle(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.annotation_subtitle)
     }
 
+    /// Wraps `MKUserLocationView.centerOffset`.
     pub fn center_offset(&self) -> Result<MKScreenPoint, MapKitError> {
         Ok(self.state()?.center_offset)
     }
 
+    /// Wraps `MKUserLocationView.centerOffset`.
     pub fn set_center_offset(&self, center_offset: MKScreenPoint) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             center_offset: Some(center_offset),
@@ -765,10 +843,12 @@ impl MKUserLocationView {
         })
     }
 
+    /// Wraps `MKUserLocationView.canShowCallout`.
     pub fn can_show_callout(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_show_callout)
     }
 
+    /// Wraps `MKUserLocationView.canShowCallout`.
     pub fn set_can_show_callout(&self, can_show_callout: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKAnnotationViewOptions {
             can_show_callout: Some(can_show_callout),
@@ -776,12 +856,14 @@ impl MKUserLocationView {
         })
     }
 
+    /// Wraps `MKUserLocationView.prepareForReuse`.
     pub fn prepare_for_reuse(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe { ffi::mk_annotation_view_prepare_for_reuse(self.raw.as_ptr(), &mut error) };
         unsafe { unit_result(error, "failed to prepare MKUserLocationView for reuse") }
     }
 
+    /// Wraps `MKUserLocationView.prepareForDisplay`.
     pub fn prepare_for_display(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe { ffi::mk_annotation_view_prepare_for_display(self.raw.as_ptr(), &mut error) };

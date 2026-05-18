@@ -9,6 +9,7 @@ use crate::ffi;
 use crate::geometry::{MKCoordinate, MKMapRect, MKScreenSize};
 use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
 
+/// Wraps `MKOverlayLevel`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKOverlayLevel {
@@ -16,6 +17,7 @@ pub enum MKOverlayLevel {
     AboveLabels,
 }
 
+/// Wraps `MKOverlay`.
 pub trait MKOverlay: MKAnnotation {
     fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError>;
     fn can_replace_map_content(&self) -> Result<bool, MapKitError>;
@@ -23,8 +25,10 @@ pub trait MKOverlay: MKAnnotation {
     fn as_raw_overlay(&self) -> *mut c_void;
 }
 
+/// Wraps `MKShape`.
 pub trait MKShape: MKAnnotation {}
 
+/// Wraps `MKMultiPoint`.
 pub trait MKMultiPoint: MKOverlay {
     fn point_count(&self) -> Result<usize, MapKitError>;
     fn coordinates(&self) -> Result<Vec<MKCoordinate>, MapKitError>;
@@ -57,12 +61,17 @@ struct MKMultiPointState {
     interior_polygon_count: Option<usize>,
 }
 
+/// Wraps `MKTileOverlayPath`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKTileOverlayPath {
+    /// Wraps `MKTileOverlayPath.x`.
     pub x: i64,
+    /// Wraps `MKTileOverlayPath.y`.
     pub y: i64,
+    /// Wraps `MKTileOverlayPath.z`.
     pub z: i64,
+    /// Wraps `MKTileOverlayPath.contentScaleFactor`.
     pub content_scale_factor: f64,
 }
 
@@ -109,12 +118,14 @@ struct MKMultiPolygonState {
     polygons: Vec<Vec<MKCoordinate>>,
 }
 
+/// Wraps `MKCircle`.
 #[derive(Debug)]
 pub struct MKCircle {
     raw: NonNull<c_void>,
 }
 
 impl MKCircle {
+    /// Creates a wrapper for `MKCircle`.
     pub fn new(center: MKCoordinate, radius: f64) -> Result<Self, MapKitError> {
         let payload = json_cstring(
             &MKCirclePayload {
@@ -139,18 +150,22 @@ impl MKCircle {
         }
     }
 
+    /// Wraps `MKCircle.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKCircle.radius`.
     pub fn radius(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.radius)
     }
 
+    /// Wraps `MKCircle.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKCircle.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
@@ -200,12 +215,14 @@ impl Drop for MKCircle {
     }
 }
 
+/// Wraps `MKPolyline`.
 #[derive(Debug)]
 pub struct MKPolyline {
     raw: NonNull<c_void>,
 }
 
 impl MKPolyline {
+    /// Creates a wrapper for `MKPolyline`.
     pub fn new(coordinates: &[MKCoordinate]) -> Result<Self, MapKitError> {
         let payload = json_cstring(coordinates, "MKPolyline coordinates")?;
         let mut error = ptr::null_mut();
@@ -224,22 +241,27 @@ impl MKPolyline {
         }
     }
 
+    /// Wraps `MKPolyline.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKPolyline.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKPolyline.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    /// Wraps `MKPolyline.pointCount`.
     pub fn point_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.point_count)
     }
 
+    /// Wraps `MKPolyline.coordinates`.
     pub fn coordinates(&self) -> Result<Vec<MKCoordinate>, MapKitError> {
         Ok(self.state()?.coordinates)
     }
@@ -298,12 +320,14 @@ impl Drop for MKPolyline {
     }
 }
 
+/// Wraps `MKGeodesicPolyline`.
 #[derive(Debug)]
 pub struct MKGeodesicPolyline {
     raw: NonNull<c_void>,
 }
 
 impl MKGeodesicPolyline {
+    /// Creates a wrapper for `MKGeodesicPolyline`.
     pub fn new(coordinates: &[MKCoordinate]) -> Result<Self, MapKitError> {
         let payload = json_cstring(coordinates, "MKGeodesicPolyline coordinates")?;
         let mut error = ptr::null_mut();
@@ -325,22 +349,27 @@ impl MKGeodesicPolyline {
         }
     }
 
+    /// Wraps `MKGeodesicPolyline.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKGeodesicPolyline.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKGeodesicPolyline.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    /// Wraps `MKGeodesicPolyline.pointCount`.
     pub fn point_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.point_count)
     }
 
+    /// Wraps `MKGeodesicPolyline.coordinates`.
     pub fn coordinates(&self) -> Result<Vec<MKCoordinate>, MapKitError> {
         Ok(self.state()?.coordinates)
     }
@@ -399,12 +428,14 @@ impl Drop for MKGeodesicPolyline {
     }
 }
 
+/// Wraps `MKPolygon`.
 #[derive(Debug)]
 pub struct MKPolygon {
     raw: NonNull<c_void>,
 }
 
 impl MKPolygon {
+    /// Creates a wrapper for `MKPolygon`.
     pub fn new(coordinates: &[MKCoordinate]) -> Result<Self, MapKitError> {
         let payload = json_cstring(coordinates, "MKPolygon coordinates")?;
         let mut error = ptr::null_mut();
@@ -423,26 +454,32 @@ impl MKPolygon {
         }
     }
 
+    /// Wraps `MKPolygon.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKPolygon.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKPolygon.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    /// Wraps `MKPolygon.pointCount`.
     pub fn point_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.point_count)
     }
 
+    /// Wraps `MKPolygon.coordinates`.
     pub fn coordinates(&self) -> Result<Vec<MKCoordinate>, MapKitError> {
         Ok(self.state()?.coordinates)
     }
 
+    /// Wraps `MKPolygon.interiorPolygonCount`.
     pub fn interior_polygon_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.interior_polygon_count.unwrap_or_default())
     }
@@ -501,12 +538,14 @@ impl Drop for MKPolygon {
     }
 }
 
+/// Wraps `MKTileOverlay`.
 #[derive(Debug)]
 pub struct MKTileOverlay {
     raw: NonNull<c_void>,
 }
 
 impl MKTileOverlay {
+    /// Creates a wrapper for `MKTileOverlay`.
     pub fn new(url_template: Option<&str>) -> Result<Self, MapKitError> {
         let url_template = url_template
             .map(|value| crate::private::cstring_from_str(value, "MKTileOverlay URLTemplate"))
@@ -547,26 +586,32 @@ impl MKTileOverlay {
         unsafe { unit_result(error, "failed to update MKTileOverlay") }
     }
 
+    /// Wraps `MKTileOverlay.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKTileOverlay.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKTileOverlay.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    /// Wraps `MKTileOverlay.urlTemplate`.
     pub fn url_template(&self) -> Result<Option<String>, MapKitError> {
         Ok(self.state()?.url_template)
     }
 
+    /// Wraps `MKTileOverlay.tileSize`.
     pub fn tile_size(&self) -> Result<MKScreenSize, MapKitError> {
         Ok(self.state()?.tile_size)
     }
 
+    /// Wraps `MKTileOverlay.tileSize`.
     pub fn set_tile_size(&self, tile_size: MKScreenSize) -> Result<(), MapKitError> {
         self.apply_options(&MKTileOverlayOptions {
             tile_size: Some(tile_size),
@@ -574,10 +619,12 @@ impl MKTileOverlay {
         })
     }
 
+    /// Wraps `MKTileOverlay.isGeometryFlipped`.
     pub fn is_geometry_flipped(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.geometry_flipped)
     }
 
+    /// Wraps `MKTileOverlay.geometryFlipped`.
     pub fn set_geometry_flipped(&self, geometry_flipped: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKTileOverlayOptions {
             geometry_flipped: Some(geometry_flipped),
@@ -585,10 +632,12 @@ impl MKTileOverlay {
         })
     }
 
+    /// Wraps `MKTileOverlay.minimumZ`.
     pub fn minimum_z(&self) -> Result<i64, MapKitError> {
         Ok(self.state()?.minimum_z)
     }
 
+    /// Wraps `MKTileOverlay.minimumZ`.
     pub fn set_minimum_z(&self, minimum_z: i64) -> Result<(), MapKitError> {
         self.apply_options(&MKTileOverlayOptions {
             minimum_z: Some(minimum_z),
@@ -596,10 +645,12 @@ impl MKTileOverlay {
         })
     }
 
+    /// Wraps `MKTileOverlay.maximumZ`.
     pub fn maximum_z(&self) -> Result<i64, MapKitError> {
         Ok(self.state()?.maximum_z)
     }
 
+    /// Wraps `MKTileOverlay.maximumZ`.
     pub fn set_maximum_z(&self, maximum_z: i64) -> Result<(), MapKitError> {
         self.apply_options(&MKTileOverlayOptions {
             maximum_z: Some(maximum_z),
@@ -607,6 +658,7 @@ impl MKTileOverlay {
         })
     }
 
+    /// Wraps `MKTileOverlay.canReplaceMapContent`.
     pub fn set_can_replace_map_content(
         &self,
         can_replace_map_content: bool,
@@ -617,6 +669,7 @@ impl MKTileOverlay {
         })
     }
 
+    /// Wraps `MKTileOverlay.urlForTilePath`.
     pub fn url_for_tile_path(
         &self,
         path: MKTileOverlayPath,
@@ -682,12 +735,14 @@ impl Drop for MKTileOverlay {
     }
 }
 
+/// Wraps `MKMultiPolyline`.
 #[derive(Debug)]
 pub struct MKMultiPolyline {
     raw: NonNull<c_void>,
 }
 
 impl MKMultiPolyline {
+    /// Creates a wrapper for `MKMultiPolyline`.
     pub fn new(polylines: &[&MKPolyline]) -> Result<Self, MapKitError> {
         let raw_polylines: Vec<*mut c_void> =
             polylines.iter().map(|polyline| polyline.as_raw()).collect();
@@ -711,22 +766,27 @@ impl MKMultiPolyline {
         }
     }
 
+    /// Wraps `MKMultiPolyline.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKMultiPolyline.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKMultiPolyline.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    /// Wraps `MKMultiPolyline.polylineCount`.
     pub fn polyline_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.polyline_count)
     }
 
+    /// Wraps `MKMultiPolyline.polylines`.
     pub fn polylines(&self) -> Result<Vec<Vec<MKCoordinate>>, MapKitError> {
         Ok(self.state()?.polylines)
     }
@@ -776,12 +836,14 @@ impl Drop for MKMultiPolyline {
     }
 }
 
+/// Wraps `MKMultiPolygon`.
 #[derive(Debug)]
 pub struct MKMultiPolygon {
     raw: NonNull<c_void>,
 }
 
 impl MKMultiPolygon {
+    /// Creates a wrapper for `MKMultiPolygon`.
     pub fn new(polygons: &[&MKPolygon]) -> Result<Self, MapKitError> {
         let raw_polygons: Vec<*mut c_void> =
             polygons.iter().map(|polygon| polygon.as_raw()).collect();
@@ -805,22 +867,27 @@ impl MKMultiPolygon {
         }
     }
 
+    /// Wraps `MKMultiPolygon.coordinate`.
     pub fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Ok(self.state()?.coordinate)
     }
 
+    /// Wraps `MKMultiPolygon.boundingMapRect`.
     pub fn bounding_map_rect(&self) -> Result<MKMapRect, MapKitError> {
         Ok(self.state()?.bounding_map_rect)
     }
 
+    /// Wraps `MKMultiPolygon.canReplaceMapContent`.
     pub fn can_replace_map_content(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    /// Wraps `MKMultiPolygon.polygonCount`.
     pub fn polygon_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.polygon_count)
     }
 
+    /// Wraps `MKMultiPolygon.polygons`.
     pub fn polygons(&self) -> Result<Vec<Vec<MKCoordinate>>, MapKitError> {
         Ok(self.state()?.polygons)
     }

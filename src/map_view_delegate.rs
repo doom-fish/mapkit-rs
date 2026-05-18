@@ -1,7 +1,5 @@
 use crate::annotation::MKUserLocation;
-use crate::annotation_view::{
-    MKAnnotation, MKAnnotationView, MKAnnotationViewDragState,
-};
+use crate::annotation_view::{MKAnnotation, MKAnnotationView, MKAnnotationViewDragState};
 use crate::cluster_annotation::MKClusterAnnotation;
 use crate::error::MapKitError;
 use crate::map_view::{MKMapView, MKUserTrackingMode};
@@ -9,6 +7,7 @@ use crate::overlay::MKOverlay;
 use crate::overlay_renderer::MKOverlayRenderer;
 use crate::selection_accessory::MKSelectionAccessory;
 
+/// Wraps `MKMapViewDelegate`.
 pub trait MKMapViewDelegate {
     fn map_view_region_will_change_animated(&mut self, _map_view: &MKMapView, _animated: bool) {}
 
@@ -20,21 +19,11 @@ pub trait MKMapViewDelegate {
 
     fn map_view_did_finish_loading_map(&mut self, _map_view: &MKMapView) {}
 
-    fn map_view_did_fail_loading_map(
-        &mut self,
-        _map_view: &MKMapView,
-        _error: &MapKitError,
-    ) {
-    }
+    fn map_view_did_fail_loading_map(&mut self, _map_view: &MKMapView, _error: &MapKitError) {}
 
     fn map_view_will_start_rendering_map(&mut self, _map_view: &MKMapView) {}
 
-    fn map_view_did_finish_rendering_map(
-        &mut self,
-        _map_view: &MKMapView,
-        _fully_rendered: bool,
-    ) {
-    }
+    fn map_view_did_finish_rendering_map(&mut self, _map_view: &MKMapView, _fully_rendered: bool) {}
 
     fn map_view_view_for_annotation(
         &mut self,

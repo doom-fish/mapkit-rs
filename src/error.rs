@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ffi;
 
+/// Wraps `MKErrorCode`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MKErrorCode {
@@ -17,6 +18,7 @@ pub enum MKErrorCode {
 }
 
 impl MKErrorCode {
+    /// Wraps `MKErrorCode.fromRaw`.
     pub const fn from_raw(value: i64) -> Option<Self> {
         match value {
             1 => Some(Self::Unknown),
@@ -29,27 +31,35 @@ impl MKErrorCode {
         }
     }
 
+    /// Wraps `MKErrorCode.asRaw`.
     pub const fn as_raw(self) -> i64 {
         self as i64
     }
 }
 
+/// Wraps `MKErrorDomain`.
 pub const fn mk_error_domain() -> &'static str {
     "MKErrorDomain"
 }
 
+/// Wraps `NSErrorInfo`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NSErrorInfo {
+    /// Wraps `NSErrorInfo.domain`.
     pub domain: String,
+    /// Wraps `NSErrorInfo.code`.
     pub code: i64,
+    /// Wraps `NSErrorInfo.message`.
     pub message: String,
 }
 
 impl NSErrorInfo {
+    /// Wraps `NSErrorInfo.isMapkitDomain`.
     pub fn is_mapkit_domain(&self) -> bool {
         self.domain == mk_error_domain()
     }
 
+    /// Wraps `NSErrorInfo.mapkitErrorCode`.
     pub fn mapkit_error_code(&self) -> Option<MKErrorCode> {
         self.is_mapkit_domain()
             .then(|| MKErrorCode::from_raw(self.code))
@@ -63,6 +73,7 @@ impl fmt::Display for NSErrorInfo {
     }
 }
 
+/// Wraps `MapKitError`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MapKitError {
@@ -84,6 +95,7 @@ impl fmt::Display for MapKitError {
 impl std::error::Error for MapKitError {}
 
 impl MapKitError {
+    /// Wraps `MapKitError.mapkitErrorCode`.
     pub fn mapkit_error_code(&self) -> Option<MKErrorCode> {
         match self {
             Self::Framework(error) => error.mapkit_error_code(),
@@ -99,10 +111,7 @@ impl MapKitError {
     /// `error_ptr` must be either null or a valid, non-aliased, nul-terminated
     /// C string allocated by the Swift bridge.  The string is freed after this
     /// call; the caller must not use `error_ptr` again.
-    pub(crate) unsafe fn from_error_ptr(
-        error_ptr: *mut core::ffi::c_char,
-        fallback: &str,
-    ) -> Self {
+    pub(crate) unsafe fn from_error_ptr(error_ptr: *mut core::ffi::c_char, fallback: &str) -> Self {
         if error_ptr.is_null() {
             return Self::OperationFailed(fallback.to_owned());
         }

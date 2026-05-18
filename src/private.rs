@@ -4,18 +4,20 @@ use core::ffi::{c_char, c_void};
 use std::ffi::{CStr, CString};
 use std::ptr::NonNull;
 
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use crate::error::MapKitError;
 use crate::ffi;
 
+/// Wraps `cstring_from_str`.
 pub fn cstring_from_str(value: &str, context: &str) -> Result<CString, MapKitError> {
     CString::new(value).map_err(|error| {
         MapKitError::InvalidArgument(format!("{context} contains NUL byte: {error}"))
     })
 }
 
+/// Wraps `json_cstring`.
 pub fn json_cstring<T: Serialize + ?Sized>(
     value: &T,
     context: &str,
@@ -26,6 +28,7 @@ pub fn json_cstring<T: Serialize + ?Sized>(
     cstring_from_str(&json, context)
 }
 
+/// Wraps `owned_handle`.
 pub fn owned_handle(
     raw: *mut c_void,
     error: *mut c_char,
@@ -84,10 +87,7 @@ pub unsafe fn parse_json_ptr<T: DeserializeOwned>(
 /// `error_ptr` must be either null or a valid, non-aliased, nul-terminated C
 /// string allocated by the Swift bridge.  The string is freed after this call;
 /// the caller must not use `error_ptr` again.
-pub unsafe fn unit_result(
-    error_ptr: *mut c_char,
-    fallback: &str,
-) -> Result<(), MapKitError> {
+pub unsafe fn unit_result(error_ptr: *mut c_char, fallback: &str) -> Result<(), MapKitError> {
     if error_ptr.is_null() {
         Ok(())
     } else {

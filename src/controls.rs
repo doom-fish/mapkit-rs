@@ -1,6 +1,7 @@
 use crate::error::MapKitError;
 use crate::map_view::{MKFeatureVisibility, MKMapView};
 
+/// Wraps `MKCompassButton`.
 #[derive(Debug)]
 pub struct MKCompassButton<'a> {
     map_view: Option<&'a MKMapView>,
@@ -8,6 +9,7 @@ pub struct MKCompassButton<'a> {
 }
 
 impl<'a> MKCompassButton<'a> {
+    /// Wraps `new`.
     pub const fn new(map_view: Option<&'a MKMapView>) -> Self {
         Self {
             map_view,
@@ -15,26 +17,32 @@ impl<'a> MKCompassButton<'a> {
         }
     }
 
+    /// Wraps `map_view`.
     pub const fn map_view(&self) -> Option<&'a MKMapView> {
         self.map_view
     }
 
+    /// Wraps `set_map_view`.
     pub fn set_map_view(&mut self, map_view: Option<&'a MKMapView>) {
         self.map_view = map_view;
     }
 
+    /// Wraps `compass_visibility`.
     pub const fn compass_visibility(&self) -> MKFeatureVisibility {
         self.compass_visibility
     }
 
+    /// Wraps `set_compass_visibility`.
     pub fn set_compass_visibility(&mut self, compass_visibility: MKFeatureVisibility) {
         self.compass_visibility = compass_visibility;
     }
 
+    /// Wraps `shows_compass`.
     pub fn shows_compass(&self) -> Result<bool, MapKitError> {
         self.map_view_required()?.shows_compass()
     }
 
+    /// Wraps `set_shows_compass`.
     pub fn set_shows_compass(&self, shows_compass: bool) -> Result<(), MapKitError> {
         self.map_view_required()?.set_shows_compass(shows_compass)
     }
@@ -48,28 +56,34 @@ impl<'a> MKCompassButton<'a> {
     }
 }
 
+/// Wraps `MKPitchControl`.
 #[derive(Debug)]
 pub struct MKPitchControl<'a> {
     map_view: Option<&'a MKMapView>,
 }
 
 impl<'a> MKPitchControl<'a> {
+    /// Wraps `new`.
     pub const fn new(map_view: Option<&'a MKMapView>) -> Self {
         Self { map_view }
     }
 
+    /// Wraps `map_view`.
     pub const fn map_view(&self) -> Option<&'a MKMapView> {
         self.map_view
     }
 
+    /// Wraps `set_map_view`.
     pub fn set_map_view(&mut self, map_view: Option<&'a MKMapView>) {
         self.map_view = map_view;
     }
 
+    /// Wraps `is_pitch_enabled`.
     pub fn is_pitch_enabled(&self) -> Result<bool, MapKitError> {
         self.map_view_required()?.is_pitch_enabled()
     }
 
+    /// Wraps `set_pitch_enabled`.
     pub fn set_pitch_enabled(&self, pitch_enabled: bool) -> Result<(), MapKitError> {
         self.map_view_required()?.set_pitch_enabled(pitch_enabled)
     }
@@ -83,30 +97,37 @@ impl<'a> MKPitchControl<'a> {
     }
 }
 
+/// Wraps `MKZoomControl`.
 #[derive(Debug)]
 pub struct MKZoomControl<'a> {
     map_view: Option<&'a MKMapView>,
 }
 
 impl<'a> MKZoomControl<'a> {
+    /// Wraps `new`.
     pub const fn new(map_view: Option<&'a MKMapView>) -> Self {
         Self { map_view }
     }
 
+    /// Wraps `map_view`.
     pub const fn map_view(&self) -> Option<&'a MKMapView> {
         self.map_view
     }
 
+    /// Wraps `set_map_view`.
     pub fn set_map_view(&mut self, map_view: Option<&'a MKMapView>) {
         self.map_view = map_view;
     }
 
+    /// Wraps `shows_zoom_controls`.
     pub fn shows_zoom_controls(&self) -> Result<bool, MapKitError> {
         self.map_view_required()?.shows_zoom_controls()
     }
 
+    /// Wraps `set_shows_zoom_controls`.
     pub fn set_shows_zoom_controls(&self, shows_zoom_controls: bool) -> Result<(), MapKitError> {
-        self.map_view_required()?.set_shows_zoom_controls(shows_zoom_controls)
+        self.map_view_required()?
+            .set_shows_zoom_controls(shows_zoom_controls)
     }
 
     fn map_view_required(&self) -> Result<&MKMapView, MapKitError> {

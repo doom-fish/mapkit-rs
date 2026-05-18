@@ -12,21 +12,28 @@ use crate::map_item::MKMapItem;
 use crate::point_of_interest::{MKLocalPointsOfInterestRequest, MKPointOfInterestFilter};
 use crate::private::{json_cstring, owned_handle, parse_json_ptr};
 
+/// Wraps `MKLocalSearchResultType`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct MKLocalSearchResultType(pub u64);
 
 impl MKLocalSearchResultType {
+    /// Wraps `MKLocalSearchResultType.address`.
     pub const ADDRESS: Self = Self(1 << 0);
+    /// Wraps `MKLocalSearchResultType.pointOfInterest`.
     pub const POINT_OF_INTEREST: Self = Self(1 << 1);
+    /// Wraps `MKLocalSearchResultType.physicalFeature`.
     pub const PHYSICAL_FEATURE: Self = Self(1 << 2);
+    /// Wraps `MKLocalSearchResultType.all`.
     pub const ALL: Self =
         Self(Self::ADDRESS.0 | Self::POINT_OF_INTEREST.0 | Self::PHYSICAL_FEATURE.0);
 
+    /// Wraps `MKLocalSearchResultType.bits`.
     pub const fn bits(self) -> u64 {
         self.0
     }
 
+    /// Wraps `MKLocalSearchResultType.contains`.
     pub const fn contains(self, other: Self) -> bool {
         self.0 & other.0 == other.0
     }
@@ -52,6 +59,7 @@ impl BitOrAssign for MKLocalSearchResultType {
     }
 }
 
+/// Wraps `MKLocalSearchRegionPriority`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum MKLocalSearchRegionPriority {
@@ -60,20 +68,28 @@ pub enum MKLocalSearchRegionPriority {
     Required,
 }
 
+/// Wraps `MKLocalSearchRequest`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKLocalSearchRequest {
+    /// Wraps `MKLocalSearchRequest.naturalLanguageQuery`.
     pub natural_language_query: String,
+    /// Wraps `MKLocalSearchRequest.region`.
     pub region: Option<MKCoordinateRegion>,
+    /// Wraps `MKLocalSearchRequest.resultTypes`.
     #[serde(default)]
     pub result_types: MKLocalSearchResultType,
+    /// Wraps `MKLocalSearchRequest.pointOfInterestFilter`.
     pub point_of_interest_filter: Option<MKPointOfInterestFilter>,
+    /// Wraps `MKLocalSearchRequest.addressFilter`.
     pub address_filter: Option<MKAddressFilter>,
+    /// Wraps `MKLocalSearchRequest.regionPriority`.
     #[serde(default)]
     pub region_priority: MKLocalSearchRegionPriority,
 }
 
 impl MKLocalSearchRequest {
+    /// Creates a wrapper for `MKLocalSearchRequest`.
     pub fn new(natural_language_query: impl Into<String>) -> Self {
         Self {
             natural_language_query: natural_language_query.into(),
@@ -85,16 +101,19 @@ impl MKLocalSearchRequest {
         }
     }
 
+    /// Wraps `MKLocalSearchRequest.region`.
     pub fn with_region(mut self, region: MKCoordinateRegion) -> Self {
         self.region = Some(region);
         self
     }
 
+    /// Wraps `MKLocalSearchRequest.resultTypes`.
     pub fn with_result_types(mut self, result_types: MKLocalSearchResultType) -> Self {
         self.result_types = result_types;
         self
     }
 
+    /// Wraps `MKLocalSearchRequest.pointOfInterestFilter`.
     pub fn with_point_of_interest_filter(
         mut self,
         point_of_interest_filter: MKPointOfInterestFilter,
@@ -103,30 +122,37 @@ impl MKLocalSearchRequest {
         self
     }
 
+    /// Wraps `MKLocalSearchRequest.addressFilter`.
     pub fn with_address_filter(mut self, address_filter: MKAddressFilter) -> Self {
         self.address_filter = Some(address_filter);
         self
     }
 
+    /// Wraps `MKLocalSearchRequest.regionPriority`.
     pub fn with_region_priority(mut self, region_priority: MKLocalSearchRegionPriority) -> Self {
         self.region_priority = region_priority;
         self
     }
 }
 
+/// Wraps `MKLocalSearchResponse`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MKLocalSearchResponse {
+    /// Wraps `MKLocalSearchResponse.mapItems`.
     pub map_items: Vec<MKMapItem>,
+    /// Wraps `MKLocalSearchResponse.boundingRegion`.
     pub bounding_region: MKCoordinateRegion,
 }
 
+/// Wraps `MKLocalSearch`.
 #[derive(Debug)]
 pub struct MKLocalSearch {
     raw: NonNull<c_void>,
 }
 
 impl MKLocalSearch {
+    /// Creates a wrapper for `MKLocalSearch`.
     pub fn new(request: &MKLocalSearchRequest) -> Result<Self, MapKitError> {
         let request_json = json_cstring(request, "MKLocalSearchRequest")?;
         let mut error = ptr::null_mut();
@@ -135,6 +161,7 @@ impl MKLocalSearch {
         Ok(Self { raw })
     }
 
+    /// Wraps `MKLocalSearch.fromPointsOfInterestRequest`.
     pub fn from_points_of_interest_request(
         request: &MKLocalPointsOfInterestRequest,
     ) -> Result<Self, MapKitError> {
@@ -152,16 +179,19 @@ impl MKLocalSearch {
         Ok(Self { raw })
     }
 
+    /// Wraps `MKLocalSearch.search`.
     pub fn search(request: &MKLocalSearchRequest) -> Result<MKLocalSearchResponse, MapKitError> {
         Self::new(request)?.start()
     }
 
+    /// Wraps `MKLocalSearch.searchPointsOfInterest`.
     pub fn search_points_of_interest(
         request: &MKLocalPointsOfInterestRequest,
     ) -> Result<MKLocalSearchResponse, MapKitError> {
         Self::from_points_of_interest_request(request)?.start()
     }
 
+    /// Wraps `MKLocalSearch.start`.
     pub fn start(&self) -> Result<MKLocalSearchResponse, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe { ffi::mk_local_search_start_json(self.raw.as_ptr(), &mut error) };
@@ -172,10 +202,12 @@ impl MKLocalSearch {
         }
     }
 
+    /// Wraps `MKLocalSearch.isSearching`.
     pub fn is_searching(&self) -> bool {
         unsafe { ffi::mk_local_search_is_searching(self.raw.as_ptr()) }
     }
 
+    /// Wraps `MKLocalSearch.cancel`.
     pub fn cancel(&self) {
         unsafe { ffi::mk_local_search_cancel(self.raw.as_ptr()) };
     }

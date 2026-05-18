@@ -11,6 +11,7 @@ use crate::overlay::{
 };
 use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
 
+/// Wraps `MKZoomScale`.
 pub type MKZoomScale = f64;
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -68,12 +69,14 @@ struct MKMapRectZoomScalePayload {
     zoom_scale: MKZoomScale,
 }
 
+/// Wraps `MKOverlayRenderer`.
 #[derive(Debug)]
 pub struct MKOverlayRenderer {
     raw: NonNull<c_void>,
 }
 
 impl MKOverlayRenderer {
+    /// Creates a wrapper for `MKOverlayRenderer`.
     pub fn new<O: MKOverlay + ?Sized>(overlay: &O) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
         let raw = unsafe { ffi::mk_overlay_renderer_new(overlay.as_raw_overlay(), &mut error) };
@@ -106,18 +109,22 @@ impl MKOverlayRenderer {
         unsafe { unit_result(error, "failed to update MKOverlayRenderer") }
     }
 
+    /// Wraps `MKOverlayRenderer.alpha`.
     pub fn alpha(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.alpha)
     }
 
+    /// Wraps `MKOverlayRenderer.alpha`.
     pub fn set_alpha(&self, alpha: f64) -> Result<(), MapKitError> {
         self.apply_options(&MKOverlayRendererOptions { alpha: Some(alpha) })
     }
 
+    /// Wraps `MKOverlayRenderer.contentScaleFactor`.
     pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.content_scale_factor)
     }
 
+    /// Wraps `MKOverlayRenderer.canDrawMapRect`.
     pub fn can_draw_map_rect(
         &self,
         map_rect: MKMapRect,
@@ -147,12 +154,14 @@ impl MKOverlayRenderer {
         }
     }
 
+    /// Wraps `MKOverlayRenderer.needsDisplay`.
     pub fn set_needs_display(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe { ffi::mk_overlay_renderer_set_needs_display(self.raw.as_ptr(), &mut error) };
         unsafe { unit_result(error, "failed to invalidate MKOverlayRenderer") }
     }
 
+    /// Wraps `MKOverlayRenderer.needsDisplayInMapRect`.
     pub fn set_needs_display_in_map_rect(&self, map_rect: MKMapRect) -> Result<(), MapKitError> {
         let payload = json_cstring(&map_rect, "MKMapRect")?;
         let mut error = ptr::null_mut();
@@ -166,6 +175,7 @@ impl MKOverlayRenderer {
         unsafe { unit_result(error, "failed to invalidate MKOverlayRenderer map rect") }
     }
 
+    /// Wraps `MKOverlayRenderer.needsDisplayInMapRectWithZoomScale`.
     pub fn set_needs_display_in_map_rect_with_zoom_scale(
         &self,
         map_rect: MKMapRect,
@@ -201,12 +211,14 @@ impl Drop for MKOverlayRenderer {
     }
 }
 
+/// Wraps `MKOverlayPathRenderer`.
 #[derive(Debug)]
 pub struct MKOverlayPathRenderer {
     raw: NonNull<c_void>,
 }
 
 impl MKOverlayPathRenderer {
+    /// Creates a wrapper for `MKOverlayPathRenderer`.
     pub fn new<O: MKOverlay + ?Sized>(overlay: &O) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
         let raw =
@@ -241,18 +253,22 @@ impl MKOverlayPathRenderer {
         unsafe { unit_result(error, "failed to update MKOverlayPathRenderer") }
     }
 
+    /// Wraps `MKOverlayPathRenderer.alpha`.
     pub fn alpha(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.base.alpha)
     }
 
+    /// Wraps `MKOverlayPathRenderer.contentScaleFactor`.
     pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.base.content_scale_factor)
     }
 
+    /// Wraps `MKOverlayPathRenderer.lineWidth`.
     pub fn line_width(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.line_width)
     }
 
+    /// Wraps `MKOverlayPathRenderer.lineWidth`.
     pub fn set_line_width(&self, line_width: f64) -> Result<(), MapKitError> {
         self.apply_options(&MKOverlayPathRendererOptions {
             line_width: Some(line_width),
@@ -260,10 +276,12 @@ impl MKOverlayPathRenderer {
         })
     }
 
+    /// Wraps `MKOverlayPathRenderer.lineDashPhase`.
     pub fn line_dash_phase(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.line_dash_phase)
     }
 
+    /// Wraps `MKOverlayPathRenderer.lineDashPhase`.
     pub fn set_line_dash_phase(&self, line_dash_phase: f64) -> Result<(), MapKitError> {
         self.apply_options(&MKOverlayPathRendererOptions {
             line_dash_phase: Some(line_dash_phase),
@@ -271,10 +289,12 @@ impl MKOverlayPathRenderer {
         })
     }
 
+    /// Wraps `MKOverlayPathRenderer.lineDashPattern`.
     pub fn line_dash_pattern(&self) -> Result<Option<Vec<f64>>, MapKitError> {
         Ok(self.state()?.line_dash_pattern)
     }
 
+    /// Wraps `MKOverlayPathRenderer.lineDashPattern`.
     pub fn set_line_dash_pattern(
         &self,
         line_dash_pattern: Option<Vec<f64>>,
@@ -286,10 +306,12 @@ impl MKOverlayPathRenderer {
         })
     }
 
+    /// Wraps `MKOverlayPathRenderer.shouldRasterize`.
     pub fn should_rasterize(&self) -> Result<bool, MapKitError> {
         Ok(self.state()?.should_rasterize)
     }
 
+    /// Wraps `MKOverlayPathRenderer.shouldRasterize`.
     pub fn set_should_rasterize(&self, should_rasterize: bool) -> Result<(), MapKitError> {
         self.apply_options(&MKOverlayPathRendererOptions {
             should_rasterize: Some(should_rasterize),
@@ -304,6 +326,7 @@ impl Drop for MKOverlayPathRenderer {
     }
 }
 
+/// Wraps `MKCircleRenderer`.
 #[derive(Debug)]
 pub struct MKCircleRenderer {
     raw: NonNull<c_void>,
@@ -312,6 +335,7 @@ pub struct MKCircleRenderer {
 macro_rules! stroke_renderer_impl {
     ($name:ident, $new_fn:ident, $state_fn:ident, $apply_fn:ident, $release_fn:ident, $overlay_ty:ty, $label:literal) => {
         impl $name {
+            /// Wraps `new`.
             pub fn new(overlay: &$overlay_ty) -> Result<Self, MapKitError> {
                 let mut error = ptr::null_mut();
                 let raw = unsafe { ffi::$new_fn(overlay.as_raw(), &mut error) };
@@ -341,18 +365,22 @@ macro_rules! stroke_renderer_impl {
                 unsafe { unit_result(error, concat!("failed to update ", $label)) }
             }
 
+            /// Wraps `alpha`.
             pub fn alpha(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.base.base.alpha)
             }
 
+            /// Wraps `line_width`.
             pub fn line_width(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.base.line_width)
             }
 
+            /// Wraps `stroke_start`.
             pub fn stroke_start(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.stroke_start)
             }
 
+            /// Wraps `set_stroke_start`.
             pub fn set_stroke_start(&self, stroke_start: f64) -> Result<(), MapKitError> {
                 self.apply_options(&MKStrokeRendererOptions {
                     stroke_start: Some(stroke_start),
@@ -360,10 +388,12 @@ macro_rules! stroke_renderer_impl {
                 })
             }
 
+            /// Wraps `stroke_end`.
             pub fn stroke_end(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.stroke_end)
             }
 
+            /// Wraps `set_stroke_end`.
             pub fn set_stroke_end(&self, stroke_end: f64) -> Result<(), MapKitError> {
                 self.apply_options(&MKStrokeRendererOptions {
                     stroke_end: Some(stroke_end),
@@ -390,6 +420,7 @@ stroke_renderer_impl!(
     "MKCircleRenderer"
 );
 
+/// Wraps `MKPolylineRenderer`.
 #[derive(Debug)]
 pub struct MKPolylineRenderer {
     raw: NonNull<c_void>,
@@ -405,6 +436,7 @@ stroke_renderer_impl!(
     "MKPolylineRenderer"
 );
 
+/// Wraps `MKGradientPolylineRenderer`.
 #[derive(Debug)]
 pub struct MKGradientPolylineRenderer {
     raw: NonNull<c_void>,
@@ -420,6 +452,7 @@ stroke_renderer_impl!(
     "MKGradientPolylineRenderer"
 );
 
+/// Wraps `MKPolygonRenderer`.
 #[derive(Debug)]
 pub struct MKPolygonRenderer {
     raw: NonNull<c_void>,
@@ -435,12 +468,14 @@ stroke_renderer_impl!(
     "MKPolygonRenderer"
 );
 
+/// Wraps `MKTileOverlayRenderer`.
 #[derive(Debug)]
 pub struct MKTileOverlayRenderer {
     raw: NonNull<c_void>,
 }
 
 impl MKTileOverlayRenderer {
+    /// Creates a wrapper for `MKTileOverlayRenderer`.
     pub fn new(overlay: &MKTileOverlay) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
         let raw = unsafe { ffi::mk_tile_overlay_renderer_new(overlay.as_raw(), &mut error) };
@@ -461,14 +496,17 @@ impl MKTileOverlayRenderer {
         }
     }
 
+    /// Wraps `MKTileOverlayRenderer.alpha`.
     pub fn alpha(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.alpha)
     }
 
+    /// Wraps `MKTileOverlayRenderer.contentScaleFactor`.
     pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.content_scale_factor)
     }
 
+    /// Wraps `MKTileOverlayRenderer.reloadData`.
     pub fn reload_data(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
         unsafe { ffi::mk_tile_overlay_renderer_reload_data(self.raw.as_ptr(), &mut error) };
@@ -490,6 +528,7 @@ macro_rules! path_renderer_impl {
         }
 
         impl $name {
+            /// Wraps `new`.
             pub fn new(overlay: &$overlay_ty) -> Result<Self, MapKitError> {
                 let mut error = ptr::null_mut();
                 let raw = unsafe { ffi::$new_fn(overlay.as_raw(), &mut error) };
@@ -530,18 +569,22 @@ macro_rules! path_renderer_impl {
                 unsafe { unit_result(error, concat!("failed to update ", $label)) }
             }
 
+            /// Wraps `alpha`.
             pub fn alpha(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.base.alpha)
             }
 
+            /// Wraps `content_scale_factor`.
             pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.base.content_scale_factor)
             }
 
+            /// Wraps `line_width`.
             pub fn line_width(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.line_width)
             }
 
+            /// Wraps `set_line_width`.
             pub fn set_line_width(&self, line_width: f64) -> Result<(), MapKitError> {
                 self.apply_options(&MKOverlayPathRendererOptions {
                     line_width: Some(line_width),
@@ -549,10 +592,12 @@ macro_rules! path_renderer_impl {
                 })
             }
 
+            /// Wraps `line_dash_phase`.
             pub fn line_dash_phase(&self) -> Result<f64, MapKitError> {
                 Ok(self.state()?.line_dash_phase)
             }
 
+            /// Wraps `set_line_dash_phase`.
             pub fn set_line_dash_phase(&self, line_dash_phase: f64) -> Result<(), MapKitError> {
                 self.apply_options(&MKOverlayPathRendererOptions {
                     line_dash_phase: Some(line_dash_phase),
@@ -560,10 +605,12 @@ macro_rules! path_renderer_impl {
                 })
             }
 
+            /// Wraps `line_dash_pattern`.
             pub fn line_dash_pattern(&self) -> Result<Option<Vec<f64>>, MapKitError> {
                 Ok(self.state()?.line_dash_pattern)
             }
 
+            /// Wraps `set_line_dash_pattern`.
             pub fn set_line_dash_pattern(
                 &self,
                 line_dash_pattern: Option<Vec<f64>>,
@@ -575,10 +622,12 @@ macro_rules! path_renderer_impl {
                 })
             }
 
+            /// Wraps `should_rasterize`.
             pub fn should_rasterize(&self) -> Result<bool, MapKitError> {
                 Ok(self.state()?.should_rasterize)
             }
 
+            /// Wraps `set_should_rasterize`.
             pub fn set_should_rasterize(&self, should_rasterize: bool) -> Result<(), MapKitError> {
                 self.apply_options(&MKOverlayPathRendererOptions {
                     should_rasterize: Some(should_rasterize),
@@ -609,6 +658,7 @@ path_renderer_impl!(
     "MKMultiPolygonRenderer"
 );
 
+/// Wraps `MKRoadWidthAtZoomScale`.
 pub fn mk_road_width_at_zoom_scale(zoom_scale: MKZoomScale) -> f64 {
     unsafe { ffi::mk_road_width_at_zoom_scale(zoom_scale) }
 }

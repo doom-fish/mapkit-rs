@@ -7,6 +7,7 @@ use crate::error::MapKitError;
 use crate::ffi;
 use crate::private::{cstring_from_str, owned_handle, take_string};
 
+/// Wraps `MKDistanceFormatterUnits`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum MKDistanceFormatterUnits {
@@ -28,6 +29,7 @@ impl MKDistanceFormatterUnits {
     }
 }
 
+/// Wraps `MKDistanceFormatterUnitStyle`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum MKDistanceFormatterUnitStyle {
@@ -47,62 +49,61 @@ impl MKDistanceFormatterUnitStyle {
     }
 }
 
+/// Wraps `MKDistanceFormatter`.
 #[derive(Debug)]
 pub struct MKDistanceFormatter {
     raw: NonNull<c_void>,
 }
 
 impl MKDistanceFormatter {
+    /// Creates a wrapper for `MKDistanceFormatter`.
     pub fn new() -> Result<Self, MapKitError> {
         let raw = unsafe { ffi::mk_distance_formatter_new() };
         let raw = owned_handle(raw, ptr::null_mut(), "failed to create MKDistanceFormatter")?;
         Ok(Self { raw })
     }
 
+    /// Wraps `MKDistanceFormatter.units`.
     pub fn with_units(mut self, units: MKDistanceFormatterUnits) -> Self {
         self.set_units(units);
         self
     }
 
+    /// Wraps `MKDistanceFormatter.unitStyle`.
     pub fn with_unit_style(mut self, unit_style: MKDistanceFormatterUnitStyle) -> Self {
         self.set_unit_style(unit_style);
         self
     }
 
+    /// Wraps `MKDistanceFormatter.units`.
     pub fn set_units(&mut self, units: MKDistanceFormatterUnits) {
         unsafe { ffi::mk_distance_formatter_set_units(self.raw.as_ptr(), units.as_raw()) };
     }
 
+    /// Wraps `MKDistanceFormatter.unitStyle`.
     pub fn set_unit_style(&mut self, unit_style: MKDistanceFormatterUnitStyle) {
-        unsafe { ffi::mk_distance_formatter_set_unit_style(self.raw.as_ptr(), unit_style.as_raw()) };
+        unsafe {
+            ffi::mk_distance_formatter_set_unit_style(self.raw.as_ptr(), unit_style.as_raw())
+        };
     }
 
+    /// Wraps `MKDistanceFormatter.stringFromDistance`.
     pub fn string_from_distance(&self, distance: f64) -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_distance_formatter_string_from_distance(
-                self.raw.as_ptr(),
-                distance,
-                &mut error,
-            )
+            ffi::mk_distance_formatter_string_from_distance(self.raw.as_ptr(), distance, &mut error)
         };
         if payload.is_null() {
-            Err(unsafe {
-                MapKitError::from_error_ptr(error, "MKDistanceFormatter string failed")
-            })
+            Err(unsafe { MapKitError::from_error_ptr(error, "MKDistanceFormatter string failed") })
         } else {
             unsafe { take_string(payload) }.ok_or_else(|| {
-                MapKitError::OperationFailed(
-                    "missing distance formatter string payload".to_owned(),
-                )
+                MapKitError::OperationFailed("missing distance formatter string payload".to_owned())
             })
         }
     }
 
-    pub fn distance_from_string(
-        &self,
-        distance_string: &str,
-    ) -> Result<f64, MapKitError> {
+    /// Wraps `MKDistanceFormatter.distanceFromString`.
+    pub fn distance_from_string(&self, distance_string: &str) -> Result<f64, MapKitError> {
         let distance_string = cstring_from_str(distance_string, "distance string")?;
         let mut error = ptr::null_mut();
         let distance = unsafe {
