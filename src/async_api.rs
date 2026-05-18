@@ -243,6 +243,13 @@ pub struct LocalSearchStartFuture {
     inner: AsyncCompletionFuture<String>,
 }
 
+impl std::fmt::Debug for LocalSearchStartFuture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LocalSearchStartFuture")
+            .finish_non_exhaustive()
+    }
+}
+
 impl Future for LocalSearchStartFuture {
     type Output = Result<MKLocalSearchResponse, MapKitError>;
 
@@ -261,6 +268,7 @@ impl Future for LocalSearchStartFuture {
 /// MapKit dispatches the completion handler on the **main queue**.  In
 /// headless programs the main run loop must be spinning for the future
 /// to resolve.
+#[derive(Debug)]
 pub struct AsyncMKLocalSearch;
 
 impl AsyncMKLocalSearch {
@@ -312,6 +320,13 @@ pub struct DirectionsCalculateFuture {
     inner: AsyncCompletionFuture<String>,
 }
 
+impl std::fmt::Debug for DirectionsCalculateFuture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DirectionsCalculateFuture")
+            .finish_non_exhaustive()
+    }
+}
+
 impl Future for DirectionsCalculateFuture {
     type Output = Result<MKDirectionsResponse, MapKitError>;
 
@@ -327,6 +342,13 @@ impl Future for DirectionsCalculateFuture {
 pub struct DirectionsEtaFuture {
     _owned: OwnedDirections,
     inner: AsyncCompletionFuture<String>,
+}
+
+impl std::fmt::Debug for DirectionsEtaFuture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DirectionsEtaFuture")
+            .finish_non_exhaustive()
+    }
 }
 
 impl Future for DirectionsEtaFuture {
@@ -348,6 +370,7 @@ impl Future for DirectionsEtaFuture {
 /// MapKit dispatches the completion handler on the **main queue**.  In
 /// headless programs the main run loop must be spinning for the futures
 /// to resolve.
+#[derive(Debug)]
 pub struct AsyncMKDirections;
 
 impl AsyncMKDirections {
@@ -406,6 +429,13 @@ pub struct SnapshotterStartFuture {
     inner: AsyncCompletionFuture<RawSendPtr>,
 }
 
+impl std::fmt::Debug for SnapshotterStartFuture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SnapshotterStartFuture")
+            .finish_non_exhaustive()
+    }
+}
+
 impl Future for SnapshotterStartFuture {
     type Output = Result<MKMapSnapshot, MapKitError>;
 
@@ -427,6 +457,7 @@ impl Future for SnapshotterStartFuture {
 /// Unlike `MKLocalSearch` and `MKDirections`, the snapshotter dispatches
 /// its callback on a background queue, so the main run loop is **not**
 /// required.
+#[derive(Debug)]
 pub struct AsyncMKMapSnapshotter;
 
 impl AsyncMKMapSnapshotter {
@@ -467,6 +498,12 @@ pub struct GeocoderFuture {
     inner: AsyncCompletionFuture<String>,
 }
 
+impl std::fmt::Debug for GeocoderFuture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GeocoderFuture").finish_non_exhaustive()
+    }
+}
+
 impl Future for GeocoderFuture {
     type Output = Result<Vec<MKMapItem>, MapKitError>;
 
@@ -483,6 +520,7 @@ impl Future for GeocoderFuture {
 ///
 /// `CLGeocoder` — the older CoreLocation geocoder — is deprecated in favour
 /// of this API and is not wrapped by mapkit-rs.
+#[derive(Debug)]
 pub struct AsyncMKGeocodingRequest;
 
 impl AsyncMKGeocodingRequest {
@@ -519,6 +557,13 @@ pub struct ReverseGeocoderFuture {
     inner: AsyncCompletionFuture<String>,
 }
 
+impl std::fmt::Debug for ReverseGeocoderFuture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ReverseGeocoderFuture")
+            .finish_non_exhaustive()
+    }
+}
+
 impl Future for ReverseGeocoderFuture {
     type Output = Result<Vec<MKMapItem>, MapKitError>;
 
@@ -532,6 +577,7 @@ impl Future for ReverseGeocoderFuture {
 
 /// Async wrapper around `MKReverseGeocodingRequest.getMapItems(completionHandler:)`
 /// (macOS 26.0+).
+#[derive(Debug)]
 pub struct AsyncMKReverseGeocodingRequest;
 
 impl AsyncMKReverseGeocodingRequest {
