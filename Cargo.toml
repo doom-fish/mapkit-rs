@@ -1,6 +1,6 @@
 [package]
 name = "mapkit"
-version = "0.3.4"
+version = "0.3.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/doom-fish/mapkit-rs"
@@ -9,7 +9,7 @@ description = "Safe Rust bindings for Apple's MapKit framework — map views, ov
 authors = ["Per Johansson <per@doom.fish>"]
 keywords = ["mapkit", "maps", "directions", "search", "macos"]
 categories = ["api-bindings", "os::macos-apis"]
-rust-version = "1.70"
+rust-version = "1.76"
 readme = "README.md"
 build = "build.rs"
 include = [

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.5] - 2026-05-19
+
+- Bump MSRV from 1.70 to 1.76 to match fleet baseline.
+
 All notable changes to this project will be documented in this file.
 
 ## [0.3.4] - 2026-05-18
