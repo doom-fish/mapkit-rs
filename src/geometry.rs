@@ -648,3 +648,100 @@ pub fn mk_string_from_map_size(size: MKMapSize) -> String {
 pub fn mk_string_from_map_rect(rect: MKMapRect) -> String {
     rect.string_representation()
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    fn assert_close(left: f64, right: f64) {
+        assert!((left - right).abs() < 1.0e-6, "left={left}, right={right}");
+    }
+
+    #[test]
+    fn coordinate_constructor_sets_fields() {
+        let coordinate = MKCoordinate::new(37.3349, -122.0090);
+
+        assert_close(coordinate.latitude, 37.3349);
+        assert_close(coordinate.longitude, -122.0090);
+    }
+
+    #[test]
+    fn coordinate_span_constructor_sets_deltas() {
+        let span = MKCoordinateSpan::new(0.25, 0.5);
+
+        assert_close(span.latitude_delta, 0.25);
+        assert_close(span.longitude_delta, 0.5);
+    }
+
+    #[test]
+    fn coordinate_region_serializes_with_camel_case_fields() {
+        let region = MKCoordinateRegion::new(
+            MKCoordinate::new(37.3349, -122.0090),
+            MKCoordinateSpan::new(0.25, 0.5),
+        );
+
+        let value = serde_json::to_value(region).unwrap();
+
+        assert_eq!(
+            value,
+            json!({
+                "center": {
+                    "latitude": 37.3349,
+                    "longitude": -122.0090,
+                },
+                "span": {
+                    "latitudeDelta": 0.25,
+                    "longitudeDelta": 0.5,
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn map_point_round_trips_through_coordinate_conversion() {
+        let coordinate = MKCoordinate::new(37.3349, -122.0090);
+
+        let point = MKMapPoint::from_coordinate(coordinate).unwrap();
+        let round_trip = point.coordinate().unwrap();
+
+        assert_close(round_trip.latitude, coordinate.latitude);
+        assert_close(round_trip.longitude, coordinate.longitude);
+    }
+
+    #[test]
+    fn map_rect_metrics_reflect_origin_and_size() {
+        let rect = MKMapRect::new(MKMapPoint::new(10.0, 20.0), MKMapSize::new(30.0, 40.0));
+
+        assert_close(rect.min_x(), 10.0);
+        assert_close(rect.min_y(), 20.0);
+        assert_close(rect.mid_x(), 25.0);
+        assert_close(rect.mid_y(), 40.0);
+        assert_close(rect.max_x(), 40.0);
+        assert_close(rect.max_y(), 60.0);
+        assert_close(rect.width(), 30.0);
+        assert_close(rect.height(), 40.0);
+    }
+
+    #[test]
+    fn null_map_rect_is_null_and_empty() {
+        let rect = MKMapRect::null();
+
+        assert!(rect.is_null());
+        assert!(rect.is_empty());
+        assert!(rect.min_x().is_infinite());
+        assert!(rect.min_y().is_infinite());
+    }
+
+    #[test]
+    fn string_helpers_match_type_representations() {
+        let point = MKMapPoint::new(10.0, 20.0);
+        let size = MKMapSize::new(30.0, 40.0);
+        let rect = MKMapRect::new(point, size);
+
+        assert_eq!(mk_string_from_map_point(point), point.string_representation());
+        assert_eq!(mk_string_from_map_size(size), size.string_representation());
+        assert_eq!(mk_string_from_map_rect(rect), rect.string_representation());
+    }
+}

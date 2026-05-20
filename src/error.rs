@@ -126,3 +126,104 @@ impl MapKitError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn framework_info() -> NSErrorInfo {
+        NSErrorInfo {
+            domain: mk_error_domain().to_owned(),
+            code: MKErrorCode::DirectionsNotFound.as_raw(),
+            message: "directions missing".to_owned(),
+        }
+    }
+
+    #[test]
+    fn error_code_round_trips_through_raw_values() {
+        for error_code in [
+            MKErrorCode::Unknown,
+            MKErrorCode::ServerFailure,
+            MKErrorCode::LoadingThrottled,
+            MKErrorCode::PlacemarkNotFound,
+            MKErrorCode::DirectionsNotFound,
+            MKErrorCode::DecodingFailed,
+        ] {
+            assert_eq!(MKErrorCode::from_raw(error_code.as_raw()), Some(error_code));
+        }
+    }
+
+    #[test]
+    fn error_code_rejects_unknown_raw_values() {
+        assert_eq!(MKErrorCode::from_raw(0), None);
+        assert_eq!(MKErrorCode::from_raw(7), None);
+    }
+
+    #[test]
+    fn ns_error_info_detects_mapkit_domain() {
+        assert!(framework_info().is_mapkit_domain());
+    }
+
+    #[test]
+    fn ns_error_info_maps_known_mapkit_codes() {
+        assert_eq!(
+            framework_info().mapkit_error_code(),
+            Some(MKErrorCode::DirectionsNotFound)
+        );
+    }
+
+    #[test]
+    fn ns_error_info_ignores_foreign_domains() {
+        let info = NSErrorInfo {
+            domain: "NSCocoaErrorDomain".to_owned(),
+            code: MKErrorCode::DirectionsNotFound.as_raw(),
+            message: "not mapkit".to_owned(),
+        };
+
+        assert!(!info.is_mapkit_domain());
+        assert_eq!(info.mapkit_error_code(), None);
+    }
+
+    #[test]
+    fn ns_error_info_display_includes_message_code_and_domain() {
+        assert_eq!(
+            framework_info().to_string(),
+            "directions missing (5) [MKErrorDomain]"
+        );
+    }
+
+    #[test]
+    fn mapkit_error_display_formats_each_variant() {
+        assert_eq!(
+            MapKitError::InvalidArgument("bad input".to_owned()).to_string(),
+            "invalid argument: bad input"
+        );
+        assert_eq!(
+            MapKitError::Framework(framework_info()).to_string(),
+            "MapKit.framework error: directions missing (5) [MKErrorDomain]"
+        );
+        assert_eq!(
+            MapKitError::OperationFailed("bridge failed".to_owned()).to_string(),
+            "mapkit operation failed: bridge failed"
+        );
+    }
+
+    #[test]
+    fn framework_variant_exposes_mapkit_error_code() {
+        let error = MapKitError::Framework(framework_info());
+
+        assert_eq!(error.mapkit_error_code(), Some(MKErrorCode::DirectionsNotFound));
+    }
+
+    #[test]
+    fn non_framework_variants_do_not_expose_mapkit_error_codes() {
+        assert_eq!(
+            MapKitError::InvalidArgument("bad input".to_owned()).mapkit_error_code(),
+            None
+        );
+        assert_eq!(
+            MapKitError::OperationFailed("bridge failed".to_owned()).mapkit_error_code(),
+            None
+        );
+    }
+}

@@ -117,3 +117,121 @@ impl MKSelectionAccessory {
         &self.presentation_style
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn automatic_style_uses_automatic_defaults() {
+        let style = MKMapItemDetailSelectionAccessoryPresentationStyle::automatic();
+
+        assert_eq!(
+            style.kind(),
+            MKMapItemDetailSelectionAccessoryPresentationKind::Automatic
+        );
+        assert_eq!(
+            style.callout_style(),
+            MKMapItemDetailSelectionAccessoryCalloutStyle::Automatic
+        );
+        assert!(!style.has_presenting_view_controller());
+    }
+
+    #[test]
+    fn automatic_style_can_mark_presenting_view_controller() {
+        let style =
+            MKMapItemDetailSelectionAccessoryPresentationStyle::automatic_with_presenting_view_controller();
+
+        assert_eq!(
+            style.kind(),
+            MKMapItemDetailSelectionAccessoryPresentationKind::Automatic
+        );
+        assert!(style.has_presenting_view_controller());
+    }
+
+    #[test]
+    fn callout_style_preserves_custom_callout_variant() {
+        let style = MKMapItemDetailSelectionAccessoryPresentationStyle::callout_with_callout_style(
+            MKMapItemDetailSelectionAccessoryCalloutStyle::Compact,
+        );
+
+        assert_eq!(
+            style.kind(),
+            MKMapItemDetailSelectionAccessoryPresentationKind::Callout
+        );
+        assert_eq!(
+            style.callout_style(),
+            MKMapItemDetailSelectionAccessoryCalloutStyle::Compact
+        );
+        assert!(!style.has_presenting_view_controller());
+    }
+
+    #[test]
+    fn default_callout_style_is_automatic() {
+        let style = MKMapItemDetailSelectionAccessoryPresentationStyle::callout();
+
+        assert_eq!(
+            style.callout_style(),
+            MKMapItemDetailSelectionAccessoryCalloutStyle::Automatic
+        );
+    }
+
+    #[test]
+    fn sheet_style_requires_a_presenting_view_controller() {
+        let style = MKMapItemDetailSelectionAccessoryPresentationStyle::sheet();
+
+        assert_eq!(
+            style.kind(),
+            MKMapItemDetailSelectionAccessoryPresentationKind::Sheet
+        );
+        assert!(style.has_presenting_view_controller());
+    }
+
+    #[test]
+    fn open_in_maps_style_uses_expected_kind() {
+        let style = MKMapItemDetailSelectionAccessoryPresentationStyle::open_in_maps();
+
+        assert_eq!(
+            style.kind(),
+            MKMapItemDetailSelectionAccessoryPresentationKind::OpenInMaps
+        );
+        assert_eq!(
+            style.callout_style(),
+            MKMapItemDetailSelectionAccessoryCalloutStyle::Automatic
+        );
+        assert!(!style.has_presenting_view_controller());
+    }
+
+    #[test]
+    fn selection_accessory_wraps_presentation_style() {
+        let presentation_style = MKMapItemDetailSelectionAccessoryPresentationStyle::sheet();
+        let accessory = MKSelectionAccessory::map_item_detail(presentation_style.clone());
+
+        assert_eq!(accessory.presentation_style(), &presentation_style);
+    }
+
+    #[test]
+    fn presentation_style_round_trips_through_json() {
+        let style = MKMapItemDetailSelectionAccessoryPresentationStyle::callout_with_callout_style(
+            MKMapItemDetailSelectionAccessoryCalloutStyle::Compact,
+        );
+
+        let value = serde_json::to_value(style.clone()).unwrap();
+
+        assert_eq!(
+            value,
+            json!({
+                "kind": "callout",
+                "calloutStyle": "compact",
+                "hasPresentingViewController": false,
+            })
+        );
+
+        let decoded: MKMapItemDetailSelectionAccessoryPresentationStyle =
+            serde_json::from_value(value).unwrap();
+
+        assert_eq!(decoded, style);
+    }
+}
