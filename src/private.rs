@@ -1,7 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 use core::ffi::{c_char, c_void};
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::ptr::NonNull;
 
 use serde::de::DeserializeOwned;
@@ -46,13 +46,7 @@ pub fn owned_handle(
 /// `mk_string_free`-compatible allocation).  The string is freed after this
 /// call; the caller must not use `ptr` again.
 pub unsafe fn take_string(ptr: *mut c_char) -> Option<String> {
-    if ptr.is_null() {
-        return None;
-    }
-
-    let string = CStr::from_ptr(ptr).to_string_lossy().into_owned();
-    ffi::mk_string_free(ptr);
-    Some(string)
+    doom_fish_utils::ffi_string::take_owned_cstring_c(ptr, |p| ffi::mk_string_free(p))
 }
 
 /// Parse a JSON-encoded value from a Swift bridge C string and free it.
