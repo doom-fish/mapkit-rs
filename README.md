@@ -47,6 +47,8 @@ let response = AsyncMKLocalSearch::search(
 )?.await?;
 println!("Found {} results", response.map_items.len());
 # Ok(()) }) }
+# #[cfg(not(feature = "async"))]
+# fn main() {}
 ```
 
 ### Async surface (Tier 1)

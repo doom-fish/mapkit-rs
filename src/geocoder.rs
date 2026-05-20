@@ -76,7 +76,7 @@ impl MKGeocodingRequest {
                 self.raw.as_ptr(),
                 region.as_ptr(),
                 &mut error,
-            )
+            );
         };
         unsafe { crate::private::unit_result(error, "failed to set MKGeocodingRequest region") }
     }
@@ -137,6 +137,7 @@ impl MKGeocodingRequest {
         unsafe { ffi::mk_geocoding_request_cancel(self.raw.as_ptr()) };
     }
 
+    #[cfg(feature = "async")]
     pub(crate) fn into_raw(self) -> *mut c_void {
         let raw = self.raw.as_ptr();
         std::mem::forget(self);
@@ -244,6 +245,7 @@ impl MKReverseGeocodingRequest {
         unsafe { ffi::mk_reverse_geocoding_request_cancel(self.raw.as_ptr()) };
     }
 
+    #[cfg(feature = "async")]
     pub(crate) fn into_raw(self) -> *mut c_void {
         let raw = self.raw.as_ptr();
         std::mem::forget(self);

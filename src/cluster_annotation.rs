@@ -65,7 +65,7 @@ impl MKClusterAnnotation {
         let options = json_cstring(options, "MKClusterAnnotation options")?;
         let mut error = ptr::null_mut();
         unsafe {
-            ffi::mk_cluster_annotation_apply_json(self.raw.as_ptr(), options.as_ptr(), &mut error)
+            ffi::mk_cluster_annotation_apply_json(self.raw.as_ptr(), options.as_ptr(), &mut error);
         };
         unsafe { unit_result(error, "failed to update MKClusterAnnotation") }
     }

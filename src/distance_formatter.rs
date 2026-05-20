@@ -83,7 +83,7 @@ impl MKDistanceFormatter {
     /// Wraps `MKDistanceFormatter.unitStyle`.
     pub fn set_unit_style(&mut self, unit_style: MKDistanceFormatterUnitStyle) {
         unsafe {
-            ffi::mk_distance_formatter_set_unit_style(self.raw.as_ptr(), unit_style.as_raw())
+            ffi::mk_distance_formatter_set_unit_style(self.raw.as_ptr(), unit_style.as_raw());
         };
     }
 

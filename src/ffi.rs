@@ -4,6 +4,7 @@ use core::ffi::c_char;
 
 mod annotation;
 mod annotation_view;
+#[cfg(feature = "async")]
 mod async_ffi;
 mod cluster_annotation;
 mod configuration;
@@ -25,6 +26,7 @@ mod user_tracking_button;
 
 pub use annotation::*;
 pub use annotation_view::*;
+#[cfg(feature = "async")]
 pub use async_ffi::*;
 pub use cluster_annotation::*;
 pub use configuration::*;

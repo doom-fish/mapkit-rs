@@ -246,6 +246,7 @@ impl MKDirections {
         unsafe { ffi::mk_directions_cancel(self.raw.as_ptr()) };
     }
 
+    #[cfg(feature = "async")]
     pub(crate) fn into_raw(self) -> *mut c_void {
         let raw = self.raw.as_ptr();
         std::mem::forget(self);

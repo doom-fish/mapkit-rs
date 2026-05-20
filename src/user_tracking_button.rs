@@ -51,7 +51,7 @@ impl<'a> MKUserTrackingButton<'a> {
     pub fn set_visible(&self, visible: bool) -> Result<(), MapKitError> {
         let mut error = std::ptr::null_mut();
         unsafe {
-            ffi::mk_user_tracking_button_set_visible(self.map_view.as_raw(), visible, &mut error)
+            ffi::mk_user_tracking_button_set_visible(self.map_view.as_raw(), visible, &mut error);
         };
         unsafe {
             crate::private::unit_result(error, "failed to set MKUserTrackingButton visibility")

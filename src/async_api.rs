@@ -45,6 +45,8 @@
 //! let response = AsyncMKLocalSearch::search(&request)?.await?;
 //! println!("Found {} items", response.map_items.len());
 //! # Ok(()) }) }
+//! # #[cfg(not(feature = "async"))]
+//! # fn main() {}
 //! ```
 
 use std::ffi::{c_char, c_void, CStr};

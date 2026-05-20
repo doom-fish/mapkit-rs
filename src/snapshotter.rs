@@ -127,6 +127,7 @@ impl MKMapSnapshotter {
         unsafe { ffi::mk_map_snapshotter_cancel(self.raw.as_ptr()) };
     }
 
+    #[cfg(feature = "async")]
     pub(crate) fn into_raw(self) -> *mut c_void {
         let raw = self.raw.as_ptr();
         std::mem::forget(self);
@@ -154,6 +155,7 @@ impl MKMapSnapshot {
     /// `ptr` must be either null or a valid, retained `MKMapSnapshot` handle.
     /// Ownership is transferred to the returned `MKMapSnapshot`, which will
     /// release it on drop.
+    #[cfg(feature = "async")]
     pub(crate) unsafe fn from_raw_ptr(ptr: *mut c_void) -> Option<Self> {
         NonNull::new(ptr).map(|raw| Self { raw })
     }

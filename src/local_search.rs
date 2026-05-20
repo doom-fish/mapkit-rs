@@ -214,6 +214,7 @@ impl MKLocalSearch {
 
     /// Transfer ownership of the underlying handle to the caller.
     /// The caller becomes responsible for releasing it.
+    #[cfg(feature = "async")]
     pub(crate) fn into_raw(self) -> *mut c_void {
         let raw = self.raw.as_ptr();
         std::mem::forget(self);
