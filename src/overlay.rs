@@ -135,14 +135,14 @@ impl MKCircle {
             "MKCircle",
         )?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_circle_new_json(payload.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_circle_new_json(payload.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKCircle")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKCircleState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_circle_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_circle_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKCircle state") })
         } else {
@@ -226,14 +226,14 @@ impl MKPolyline {
     pub fn new(coordinates: &[MKCoordinate]) -> Result<Self, MapKitError> {
         let payload = json_cstring(coordinates, "MKPolyline coordinates")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_polyline_new_json(payload.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_polyline_new_json(payload.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKPolyline")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKMultiPointState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_polyline_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_polyline_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKPolyline state") })
         } else {
@@ -331,7 +331,7 @@ impl MKGeodesicPolyline {
     pub fn new(coordinates: &[MKCoordinate]) -> Result<Self, MapKitError> {
         let payload = json_cstring(coordinates, "MKGeodesicPolyline coordinates")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_geodesic_polyline_new_json(payload.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_geodesic_polyline_new_json(payload.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKGeodesicPolyline")?;
         Ok(Self { raw })
     }
@@ -339,7 +339,7 @@ impl MKGeodesicPolyline {
     fn state(&self) -> Result<MKMultiPointState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_geodesic_polyline_state_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_geodesic_polyline_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKGeodesicPolyline state")
@@ -439,14 +439,14 @@ impl MKPolygon {
     pub fn new(coordinates: &[MKCoordinate]) -> Result<Self, MapKitError> {
         let payload = json_cstring(coordinates, "MKPolygon coordinates")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_polygon_new_json(payload.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_polygon_new_json(payload.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKPolygon")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKMultiPointState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_polygon_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_polygon_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKPolygon state") })
         } else {
@@ -556,7 +556,7 @@ impl MKTileOverlay {
                 url_template
                     .as_ref()
                     .map_or(ptr::null(), |value| value.as_ptr()),
-                &mut error,
+                &raw mut error,
             )
         };
         let raw = owned_handle(raw, error, "failed to create MKTileOverlay")?;
@@ -565,7 +565,7 @@ impl MKTileOverlay {
 
     fn state(&self) -> Result<MKTileOverlayState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_tile_overlay_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_tile_overlay_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKTileOverlay state") })
         } else {
@@ -580,7 +580,7 @@ impl MKTileOverlay {
             ffi::mk_tile_overlay_apply_options_json(
                 self.raw.as_ptr(),
                 options.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to update MKTileOverlay") }
@@ -680,7 +680,7 @@ impl MKTileOverlay {
             ffi::mk_tile_overlay_url_for_tile_path_json(
                 self.raw.as_ptr(),
                 path.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -748,7 +748,7 @@ impl MKMultiPolyline {
             polylines.iter().map(|polyline| polyline.as_raw()).collect();
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_multi_polyline_new(raw_polylines.as_ptr(), raw_polylines.len(), &mut error)
+            ffi::mk_multi_polyline_new(raw_polylines.as_ptr(), raw_polylines.len(), &raw mut error)
         };
         let raw = owned_handle(raw, error, "failed to create MKMultiPolyline")?;
         Ok(Self { raw })
@@ -756,7 +756,8 @@ impl MKMultiPolyline {
 
     fn state(&self) -> Result<MKMultiPolylineState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_multi_polyline_state_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_multi_polyline_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKMultiPolyline state")
@@ -849,7 +850,7 @@ impl MKMultiPolygon {
             polygons.iter().map(|polygon| polygon.as_raw()).collect();
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_multi_polygon_new(raw_polygons.as_ptr(), raw_polygons.len(), &mut error)
+            ffi::mk_multi_polygon_new(raw_polygons.as_ptr(), raw_polygons.len(), &raw mut error)
         };
         let raw = owned_handle(raw, error, "failed to create MKMultiPolygon")?;
         Ok(Self { raw })
@@ -857,7 +858,8 @@ impl MKMultiPolygon {
 
     fn state(&self) -> Result<MKMultiPolygonState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_multi_polygon_state_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_multi_polygon_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKMultiPolygon state")

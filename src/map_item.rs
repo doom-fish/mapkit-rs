@@ -332,14 +332,15 @@ impl MKMapItemRequest {
     pub fn new(map_item_identifier: &MKMapItemIdentifier) -> Result<Self, MapKitError> {
         let identifier = cstring_from_str(map_item_identifier.raw_value(), "MKMapItemIdentifier")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_map_item_request_new(identifier.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_map_item_request_new(identifier.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKMapItemRequest")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKMapItemRequestState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_map_item_request_state_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_map_item_request_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKMapItemRequest state")
@@ -367,8 +368,9 @@ impl MKMapItemRequest {
     /// Wraps `MKMapItemRequest.mapItem`.
     pub fn map_item(&self) -> Result<MKMapItem, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_map_item_request_get_map_item_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_map_item_request_get_map_item_json(self.raw.as_ptr(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKMapItemRequest getMapItem failed") })
         } else {
@@ -410,7 +412,7 @@ fn map_item_string_constant(
     context: &str,
 ) -> Result<String, MapKitError> {
     let mut error = ptr::null_mut();
-    let value = unsafe { ffi::mk_map_item_string_constant(kind as i32, &mut error) };
+    let value = unsafe { ffi::mk_map_item_string_constant(kind as i32, &raw mut error) };
     if value.is_null() {
         Err(unsafe { MapKitError::from_error_ptr(error, context) })
     } else {

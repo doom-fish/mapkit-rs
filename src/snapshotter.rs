@@ -104,7 +104,7 @@ impl MKMapSnapshotter {
     pub fn new(options: &MKMapSnapshotOptions) -> Result<Self, MapKitError> {
         let options = json_cstring(options, "MKMapSnapshotOptions")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_map_snapshotter_new(options.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_map_snapshotter_new(options.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKMapSnapshotter")?;
         Ok(Self { raw })
     }
@@ -112,7 +112,7 @@ impl MKMapSnapshotter {
     /// Wraps `MKMapSnapshotter.start`.
     pub fn start(&self) -> Result<MKMapSnapshot, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_map_snapshotter_start(self.raw.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_map_snapshotter_start(self.raw.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "MKMapSnapshotter start failed")?;
         Ok(MKMapSnapshot { raw })
     }
@@ -162,7 +162,7 @@ impl MKMapSnapshot {
 
     fn state(&self) -> Result<MKMapSnapshotState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_map_snapshot_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_map_snapshot_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKMapSnapshot state") })
         } else {
@@ -191,7 +191,7 @@ impl MKMapSnapshot {
             ffi::mk_map_snapshot_point_for_coordinate_json(
                 self.raw.as_ptr(),
                 coordinate.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {

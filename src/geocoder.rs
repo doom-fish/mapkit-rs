@@ -39,7 +39,7 @@ impl MKGeocodingRequest {
     pub fn new(address_string: &str) -> Result<Self, MapKitError> {
         let address_string = cstring_from_str(address_string, "MKGeocodingRequest address string")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_geocoding_request_new(address_string.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_geocoding_request_new(address_string.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKGeocodingRequest")?;
         Ok(Self { raw })
     }
@@ -47,7 +47,7 @@ impl MKGeocodingRequest {
     fn state(&self) -> Result<MKGeocodingRequestState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_geocoding_request_state_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_geocoding_request_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKGeocodingRequest state")
@@ -75,7 +75,7 @@ impl MKGeocodingRequest {
             ffi::mk_geocoding_request_set_region_json(
                 self.raw.as_ptr(),
                 region.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { crate::private::unit_result(error, "failed to set MKGeocodingRequest region") }
@@ -102,7 +102,7 @@ impl MKGeocodingRequest {
             ffi::mk_geocoding_request_set_preferred_locale(
                 self.raw.as_ptr(),
                 locale_ptr,
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { crate::private::unit_result(error, "failed to set MKGeocodingRequest locale") }
@@ -121,8 +121,9 @@ impl MKGeocodingRequest {
     /// Wraps `MKGeocodingRequest.mapItems`.
     pub fn map_items(&self) -> Result<Vec<MKMapItem>, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_geocoding_request_get_map_items_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_geocoding_request_get_map_items_json(self.raw.as_ptr(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "MKGeocodingRequest getMapItems failed")
@@ -162,16 +163,18 @@ impl MKReverseGeocodingRequest {
     pub fn new(location: MKCoordinate) -> Result<Self, MapKitError> {
         let location = json_cstring(&location, "MKCoordinate")?;
         let mut error = ptr::null_mut();
-        let raw =
-            unsafe { ffi::mk_reverse_geocoding_request_new_json(location.as_ptr(), &mut error) };
+        let raw = unsafe {
+            ffi::mk_reverse_geocoding_request_new_json(location.as_ptr(), &raw mut error)
+        };
         let raw = owned_handle(raw, error, "failed to create MKReverseGeocodingRequest")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKReverseGeocodingRequestState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_reverse_geocoding_request_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_reverse_geocoding_request_state_json(self.raw.as_ptr(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKReverseGeocodingRequest state")
@@ -207,7 +210,7 @@ impl MKReverseGeocodingRequest {
             ffi::mk_reverse_geocoding_request_set_preferred_locale(
                 self.raw.as_ptr(),
                 locale_ptr,
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe {
@@ -229,7 +232,7 @@ impl MKReverseGeocodingRequest {
     pub fn map_items(&self) -> Result<Vec<MKMapItem>, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_reverse_geocoding_request_get_map_items_json(self.raw.as_ptr(), &mut error)
+            ffi::mk_reverse_geocoding_request_get_map_items_json(self.raw.as_ptr(), &raw mut error)
         };
         if payload.is_null() {
             Err(unsafe {

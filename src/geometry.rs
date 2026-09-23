@@ -76,7 +76,7 @@ impl MKCoordinateRegion {
                 center_json.as_ptr(),
                 latitudinal_meters,
                 longitudinal_meters,
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -93,7 +93,7 @@ impl MKCoordinateRegion {
         let map_rect_json = json_cstring(&map_rect, "MKMapRect")?;
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_coordinate_region_for_map_rect_json(map_rect_json.as_ptr(), &mut error)
+            ffi::mk_coordinate_region_for_map_rect_json(map_rect_json.as_ptr(), &raw mut error)
         };
         if payload.is_null() {
             Err(unsafe {
@@ -125,8 +125,9 @@ impl MKMapPoint {
     pub fn from_coordinate(coordinate: MKCoordinate) -> Result<Self, MapKitError> {
         let coordinate_json = json_cstring(&coordinate, "MKCoordinate")?;
         let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_map_point_for_coordinate_json(coordinate_json.as_ptr(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_map_point_for_coordinate_json(coordinate_json.as_ptr(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKMapPoint for coordinate failed") })
         } else {
@@ -138,8 +139,9 @@ impl MKMapPoint {
     pub fn coordinate(self) -> Result<MKCoordinate, MapKitError> {
         let map_point_json = json_cstring(&self, "MKMapPoint")?;
         let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_coordinate_for_map_point_json(map_point_json.as_ptr(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_coordinate_for_map_point_json(map_point_json.as_ptr(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "coordinate for MKMapPoint failed") })
         } else {
@@ -156,7 +158,7 @@ impl MKMapPoint {
             ffi::mk_meters_between_map_points(
                 first_map_point_json.as_ptr(),
                 second_map_point_json.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         scalar_result(distance, error, "meters between MKMapPoints failed")
@@ -348,7 +350,7 @@ impl MKMapRect {
                 amount,
                 edge as i32,
                 MKMapRectTransformKind::Divide as i32,
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -411,7 +413,7 @@ impl MKMapRect {
                 0.0,
                 MKMapRectEdge::MinX as i32,
                 MKMapRectTransformKind::Remainder as i32,
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -516,7 +518,7 @@ fn geometry_constant<T: DeserializeOwned>(
     context: &str,
 ) -> Result<T, MapKitError> {
     let mut error = ptr::null_mut();
-    let payload = unsafe { ffi::mk_geometry_constant_json(kind as i32, &mut error) };
+    let payload = unsafe { ffi::mk_geometry_constant_json(kind as i32, &raw mut error) };
     if payload.is_null() {
         Err(unsafe { MapKitError::from_error_ptr(error, context) })
     } else {
@@ -554,7 +556,7 @@ fn map_rect_predicate<T: Serialize>(
                 .as_ref()
                 .map_or(ptr::null(), |value| value.as_ptr()),
             kind as i32,
-            &mut error,
+            &raw mut error,
         )
     };
     if error.is_null() {
@@ -582,7 +584,7 @@ fn map_rect_binary_transform(
             0.0,
             MKMapRectEdge::MinX as i32,
             kind as i32,
-            &mut error,
+            &raw mut error,
         )
     };
     if payload.is_null() {
@@ -610,7 +612,7 @@ fn map_rect_delta_transform(
             0.0,
             MKMapRectEdge::MinX as i32,
             kind as i32,
-            &mut error,
+            &raw mut error,
         )
     };
     if payload.is_null() {
@@ -623,14 +625,14 @@ fn map_rect_delta_transform(
 /// Wraps `MKMapPointsPerMeterAtLatitude`.
 pub fn mk_map_points_per_meter_at_latitude(latitude: f64) -> Result<f64, MapKitError> {
     let mut error = ptr::null_mut();
-    let value = unsafe { ffi::mk_map_points_per_meter_at_latitude(latitude, &mut error) };
+    let value = unsafe { ffi::mk_map_points_per_meter_at_latitude(latitude, &raw mut error) };
     scalar_result(value, error, "MKMapPointsPerMeterAtLatitude failed")
 }
 
 /// Wraps `MKMetersPerMapPointAtLatitude`.
 pub fn mk_meters_per_map_point_at_latitude(latitude: f64) -> Result<f64, MapKitError> {
     let mut error = ptr::null_mut();
-    let value = unsafe { ffi::mk_meters_per_map_point_at_latitude(latitude, &mut error) };
+    let value = unsafe { ffi::mk_meters_per_map_point_at_latitude(latitude, &raw mut error) };
     scalar_result(value, error, "MKMetersPerMapPointAtLatitude failed")
 }
 

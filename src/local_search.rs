@@ -156,7 +156,7 @@ impl MKLocalSearch {
     pub fn new(request: &MKLocalSearchRequest) -> Result<Self, MapKitError> {
         let request_json = json_cstring(request, "MKLocalSearchRequest")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_local_search_new(request_json.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_local_search_new(request_json.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKLocalSearch")?;
         Ok(Self { raw })
     }
@@ -169,7 +169,7 @@ impl MKLocalSearch {
         let request_json = json_cstring(request, "MKLocalPointsOfInterestRequest")?;
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_local_search_new_points_of_interest(request_json.as_ptr(), &mut error)
+            ffi::mk_local_search_new_points_of_interest(request_json.as_ptr(), &raw mut error)
         };
         let raw = owned_handle(
             raw,
@@ -194,7 +194,7 @@ impl MKLocalSearch {
     /// Wraps `MKLocalSearch.start`.
     pub fn start(&self) -> Result<MKLocalSearchResponse, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_local_search_start_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_local_search_start_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKLocalSearch start failed") })
         } else {

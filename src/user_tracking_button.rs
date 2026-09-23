@@ -26,8 +26,9 @@ impl<'a> MKUserTrackingButton<'a> {
 
     fn state(&self) -> Result<MKUserTrackingButtonState, MapKitError> {
         let mut error = std::ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_user_tracking_button_state_json(self.map_view.as_raw(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_user_tracking_button_state_json(self.map_view.as_raw(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKUserTrackingButton state")
@@ -51,7 +52,11 @@ impl<'a> MKUserTrackingButton<'a> {
     pub fn set_visible(&self, visible: bool) -> Result<(), MapKitError> {
         let mut error = std::ptr::null_mut();
         unsafe {
-            ffi::mk_user_tracking_button_set_visible(self.map_view.as_raw(), visible, &mut error);
+            ffi::mk_user_tracking_button_set_visible(
+                self.map_view.as_raw(),
+                visible,
+                &raw mut error,
+            );
         };
         unsafe {
             crate::private::unit_result(error, "failed to set MKUserTrackingButton visibility")
@@ -71,7 +76,7 @@ impl<'a> MKUserTrackingButton<'a> {
                 self.map_view.as_raw(),
                 payload.as_ptr(),
                 animated,
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { crate::private::unit_result(error, "failed to set MKUserTrackingButton mode") }

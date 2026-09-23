@@ -194,7 +194,8 @@ impl MKGeoJSONDecoder {
     /// Wraps `MKGeoJSONDecoder.decode`.
     pub fn decode(&self, data: &[u8]) -> Result<Vec<MKGeoJSONObjectValue>, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_geojson_decode_json(data.as_ptr(), data.len(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_geojson_decode_json(data.as_ptr(), data.len(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKGeoJSONDecoder decode failed") })
         } else {

@@ -208,7 +208,7 @@ impl MKDirections {
     pub fn new(request: &MKDirectionsRequest) -> Result<Self, MapKitError> {
         let request_json = json_cstring(request, "MKDirectionsRequest")?;
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_directions_new(request_json.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_directions_new(request_json.as_ptr(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKDirections")?;
         Ok(Self { raw })
     }
@@ -216,7 +216,8 @@ impl MKDirections {
     /// Wraps `MKDirections.calculate`.
     pub fn calculate(&self) -> Result<MKDirectionsResponse, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_directions_calculate_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_directions_calculate_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKDirections calculate failed") })
         } else {
@@ -228,7 +229,7 @@ impl MKDirections {
     pub fn calculate_eta(&self) -> Result<MKETAResponse, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_directions_calculate_eta_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_directions_calculate_eta_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKDirections ETA failed") })
         } else {

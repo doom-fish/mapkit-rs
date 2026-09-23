@@ -79,14 +79,15 @@ impl MKOverlayRenderer {
     /// Creates a wrapper for `MKOverlayRenderer`.
     pub fn new<O: MKOverlay + ?Sized>(overlay: &O) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_overlay_renderer_new(overlay.as_raw_overlay(), &mut error) };
+        let raw = unsafe { ffi::mk_overlay_renderer_new(overlay.as_raw_overlay(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKOverlayRenderer")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKOverlayRendererState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_overlay_renderer_state_json(self.raw.as_ptr(), &mut error) };
+        let payload =
+            unsafe { ffi::mk_overlay_renderer_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKOverlayRenderer state")
@@ -103,7 +104,7 @@ impl MKOverlayRenderer {
             ffi::mk_overlay_renderer_apply_options_json(
                 self.raw.as_ptr(),
                 options.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to update MKOverlayRenderer") }
@@ -142,7 +143,7 @@ impl MKOverlayRenderer {
             ffi::mk_overlay_renderer_can_draw_map_rect_json(
                 self.raw.as_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if error.is_null() {
@@ -157,7 +158,7 @@ impl MKOverlayRenderer {
     /// Wraps `MKOverlayRenderer.needsDisplay`.
     pub fn set_needs_display(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
-        unsafe { ffi::mk_overlay_renderer_set_needs_display(self.raw.as_ptr(), &mut error) };
+        unsafe { ffi::mk_overlay_renderer_set_needs_display(self.raw.as_ptr(), &raw mut error) };
         unsafe { unit_result(error, "failed to invalidate MKOverlayRenderer") }
     }
 
@@ -169,7 +170,7 @@ impl MKOverlayRenderer {
             ffi::mk_overlay_renderer_set_needs_display_in_map_rect_json(
                 self.raw.as_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to invalidate MKOverlayRenderer map rect") }
@@ -193,7 +194,7 @@ impl MKOverlayRenderer {
             ffi::mk_overlay_renderer_set_needs_display_in_map_rect_zoom_scale_json(
                 self.raw.as_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe {
@@ -222,7 +223,7 @@ impl MKOverlayPathRenderer {
     pub fn new<O: MKOverlay + ?Sized>(overlay: &O) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
         let raw =
-            unsafe { ffi::mk_overlay_path_renderer_new(overlay.as_raw_overlay(), &mut error) };
+            unsafe { ffi::mk_overlay_path_renderer_new(overlay.as_raw_overlay(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKOverlayPathRenderer")?;
         Ok(Self { raw })
     }
@@ -230,7 +231,7 @@ impl MKOverlayPathRenderer {
     fn state(&self) -> Result<MKOverlayPathRendererState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_overlay_path_renderer_state_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_overlay_path_renderer_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKOverlayPathRenderer state")
@@ -247,7 +248,7 @@ impl MKOverlayPathRenderer {
             ffi::mk_overlay_path_renderer_apply_options_json(
                 self.raw.as_ptr(),
                 options.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to update MKOverlayPathRenderer") }
@@ -478,7 +479,7 @@ impl MKTileOverlayRenderer {
     /// Creates a wrapper for `MKTileOverlayRenderer`.
     pub fn new(overlay: &MKTileOverlay) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_tile_overlay_renderer_new(overlay.as_raw(), &mut error) };
+        let raw = unsafe { ffi::mk_tile_overlay_renderer_new(overlay.as_raw(), &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKTileOverlayRenderer")?;
         Ok(Self { raw })
     }
@@ -486,7 +487,7 @@ impl MKTileOverlayRenderer {
     fn state(&self) -> Result<MKOverlayRendererState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_tile_overlay_renderer_state_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_tile_overlay_renderer_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKTileOverlayRenderer state")
@@ -509,7 +510,7 @@ impl MKTileOverlayRenderer {
     /// Wraps `MKTileOverlayRenderer.reloadData`.
     pub fn reload_data(&self) -> Result<(), MapKitError> {
         let mut error = ptr::null_mut();
-        unsafe { ffi::mk_tile_overlay_renderer_reload_data(self.raw.as_ptr(), &mut error) };
+        unsafe { ffi::mk_tile_overlay_renderer_reload_data(self.raw.as_ptr(), &raw mut error) };
         unsafe { unit_result(error, "failed to reload MKTileOverlayRenderer") }
     }
 }

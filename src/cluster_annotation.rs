@@ -42,7 +42,7 @@ impl MKClusterAnnotation {
             .collect();
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::mk_cluster_annotation_new(raw_members.as_ptr(), raw_members.len(), &mut error)
+            ffi::mk_cluster_annotation_new(raw_members.as_ptr(), raw_members.len(), &raw mut error)
         };
         let raw = owned_handle(raw, error, "failed to create MKClusterAnnotation")?;
         Ok(Self { raw })
@@ -51,7 +51,7 @@ impl MKClusterAnnotation {
     fn state(&self) -> Result<MKClusterAnnotationState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_cluster_annotation_state_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_cluster_annotation_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKClusterAnnotation state")
@@ -65,7 +65,11 @@ impl MKClusterAnnotation {
         let options = json_cstring(options, "MKClusterAnnotation options")?;
         let mut error = ptr::null_mut();
         unsafe {
-            ffi::mk_cluster_annotation_apply_json(self.raw.as_ptr(), options.as_ptr(), &mut error);
+            ffi::mk_cluster_annotation_apply_json(
+                self.raw.as_ptr(),
+                options.as_ptr(),
+                &raw mut error,
+            );
         };
         unsafe { unit_result(error, "failed to update MKClusterAnnotation") }
     }

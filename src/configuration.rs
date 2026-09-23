@@ -94,7 +94,7 @@ impl MKMapCameraBoundary {
         let map_rect = json_cstring(&map_rect, "MKMapRect")?;
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_map_camera_boundary_from_map_rect_json(map_rect.as_ptr(), &mut error)
+            ffi::mk_map_camera_boundary_from_map_rect_json(map_rect.as_ptr(), &raw mut error)
         };
         if payload.is_null() {
             Err(unsafe {
@@ -109,8 +109,9 @@ impl MKMapCameraBoundary {
     pub fn from_region(region: MKCoordinateRegion) -> Result<Self, MapKitError> {
         let region = json_cstring(&region, "MKCoordinateRegion")?;
         let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_map_camera_boundary_from_region_json(region.as_ptr(), &mut error) };
+        let payload = unsafe {
+            ffi::mk_map_camera_boundary_from_region_json(region.as_ptr(), &raw mut error)
+        };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to create MKMapCameraBoundary")

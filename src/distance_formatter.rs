@@ -91,7 +91,11 @@ impl MKDistanceFormatter {
     pub fn string_from_distance(&self, distance: f64) -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_distance_formatter_string_from_distance(self.raw.as_ptr(), distance, &mut error)
+            ffi::mk_distance_formatter_string_from_distance(
+                self.raw.as_ptr(),
+                distance,
+                &raw mut error,
+            )
         };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKDistanceFormatter string failed") })
@@ -110,7 +114,7 @@ impl MKDistanceFormatter {
             ffi::mk_distance_formatter_distance_from_string(
                 self.raw.as_ptr(),
                 distance_string.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if error.is_null() {

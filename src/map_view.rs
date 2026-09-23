@@ -114,14 +114,14 @@ impl MKMapView {
     /// Creates a wrapper for `MKMapView`.
     pub fn new(size: MKScreenSize) -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_map_view_new(size.width, size.height, &mut error) };
+        let raw = unsafe { ffi::mk_map_view_new(size.width, size.height, &raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKMapView")?;
         Ok(Self { raw })
     }
 
     fn state(&self) -> Result<MKMapViewState, MapKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::mk_map_view_state_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::mk_map_view_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "failed to read MKMapView state") })
         } else {
@@ -133,7 +133,11 @@ impl MKMapView {
         let options = json_cstring(options, "MKMapView options")?;
         let mut error = ptr::null_mut();
         unsafe {
-            ffi::mk_map_view_apply_options_json(self.raw.as_ptr(), options.as_ptr(), &mut error);
+            ffi::mk_map_view_apply_options_json(
+                self.raw.as_ptr(),
+                options.as_ptr(),
+                &raw mut error,
+            );
         };
         unsafe { unit_result(error, "failed to update MKMapView") }
     }
@@ -195,7 +199,11 @@ impl MKMapView {
         let region = json_cstring(&region, "MKCoordinateRegion")?;
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_map_view_region_that_fits_json(self.raw.as_ptr(), region.as_ptr(), &mut error)
+            ffi::mk_map_view_region_that_fits_json(
+                self.raw.as_ptr(),
+                region.as_ptr(),
+                &raw mut error,
+            )
         };
         if payload.is_null() {
             Err(unsafe { MapKitError::from_error_ptr(error, "MKMapView regionThatFits failed") })
@@ -230,7 +238,7 @@ impl MKMapView {
             ffi::mk_map_view_map_rect_that_fits_json(
                 self.raw.as_ptr(),
                 map_rect.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -319,7 +327,7 @@ impl MKMapView {
             ffi::mk_map_view_convert_coordinate_to_point_json(
                 self.raw.as_ptr(),
                 coordinate.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -340,7 +348,7 @@ impl MKMapView {
             ffi::mk_map_view_convert_point_to_coordinate_json(
                 self.raw.as_ptr(),
                 point.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -482,7 +490,7 @@ impl MKMapView {
     /// Wraps `MKMapView.userLocation`.
     pub fn user_location(&self) -> Result<MKUserLocation, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_map_view_user_location(self.raw.as_ptr(), &mut error) };
+        let raw = unsafe { ffi::mk_map_view_user_location(self.raw.as_ptr(), &raw mut error) };
         if raw.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKMapView userLocation")
@@ -496,7 +504,7 @@ impl MKMapView {
     pub fn default_annotation_view_reuse_identifier() -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_map_view_default_annotation_view_reuse_identifier(&mut error) };
+            unsafe { ffi::mk_map_view_default_annotation_view_reuse_identifier(&raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(
@@ -513,7 +521,7 @@ impl MKMapView {
     pub fn default_cluster_annotation_view_reuse_identifier() -> Result<String, MapKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::mk_map_view_default_cluster_annotation_view_reuse_identifier(&mut error)
+            ffi::mk_map_view_default_cluster_annotation_view_reuse_identifier(&raw mut error)
         };
         if payload.is_null() {
             Err(unsafe {
@@ -605,7 +613,7 @@ impl MKMapView {
             ffi::mk_map_view_add_annotation(
                 self.raw.as_ptr(),
                 annotation.as_raw_annotation(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to add MKAnnotation") }
@@ -621,7 +629,7 @@ impl MKMapView {
             ffi::mk_map_view_remove_annotation(
                 self.raw.as_ptr(),
                 annotation.as_raw_annotation(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to remove MKAnnotation") }
@@ -669,7 +677,7 @@ impl MKMapView {
                 self.raw.as_ptr(),
                 overlay.as_raw_overlay(),
                 level.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to add MKOverlay") }
@@ -682,7 +690,7 @@ impl MKMapView {
             ffi::mk_map_view_remove_overlay(
                 self.raw.as_ptr(),
                 overlay.as_raw_overlay(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to remove MKOverlay") }

@@ -141,7 +141,7 @@ impl MKLocalSearchCompleter {
     /// Creates a wrapper for `MKLocalSearchCompleter`.
     pub fn new() -> Result<Self, MapKitError> {
         let mut error = ptr::null_mut();
-        let raw = unsafe { ffi::mk_local_search_completer_new(&mut error) };
+        let raw = unsafe { ffi::mk_local_search_completer_new(&raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKLocalSearchCompleter")?;
         Ok(Self { raw })
     }
@@ -149,7 +149,7 @@ impl MKLocalSearchCompleter {
     fn state(&self) -> Result<MKLocalSearchCompleterState, MapKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::mk_local_search_completer_state_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::mk_local_search_completer_state_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe {
                 MapKitError::from_error_ptr(error, "failed to read MKLocalSearchCompleter state")
@@ -166,7 +166,7 @@ impl MKLocalSearchCompleter {
             ffi::mk_local_search_completer_apply_options_json(
                 self.raw.as_ptr(),
                 options.as_ptr(),
-                &mut error,
+                &raw mut error,
             );
         };
         unsafe { unit_result(error, "failed to update MKLocalSearchCompleter") }
@@ -295,7 +295,7 @@ impl MKLocalSearchCompleter {
             ffi::mk_local_search_completer_refresh_json(
                 self.raw.as_ptr(),
                 timeout.as_millis().try_into().unwrap_or(u64::MAX),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
