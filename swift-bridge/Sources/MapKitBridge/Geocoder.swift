@@ -17,12 +17,15 @@ struct MKRReverseGeocodingRequestStatePayload: Codable {
     var loading: Bool
 }
 
-@available(macOS 26.0, *)
 @_cdecl("mk_geocoding_request_new")
 public func mk_geocoding_request_new(
     _ addressString: UnsafePointer<CChar>?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
+    guard #available(macOS 26.0, *) else {
+        mkrSetMessageError(outError, message: "MKGeocodingRequest requires macOS 26.0")
+        return nil
+    }
     guard let addressString else {
         mkrSetMessageError(outError, message: "missing geocoding address string")
         return nil
@@ -158,12 +161,15 @@ public func mk_geocoding_request_release(_ request: UnsafeMutableRawPointer?) {
     mkrRelease(request)
 }
 
-@available(macOS 26.0, *)
 @_cdecl("mk_reverse_geocoding_request_new_json")
 public func mk_reverse_geocoding_request_new_json(
     _ locationJSON: UnsafePointer<CChar>?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
+    guard #available(macOS 26.0, *) else {
+        mkrSetMessageError(outError, message: "MKReverseGeocodingRequest requires macOS 26.0")
+        return nil
+    }
     do {
         let location = try mkrDecodeJSON(locationJSON, as: MKRCoordinatePayload.self)
         guard let request = MKReverseGeocodingRequest(
