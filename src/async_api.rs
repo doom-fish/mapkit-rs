@@ -156,6 +156,20 @@ struct RawSendPtr(*mut c_void);
 // inspection.
 unsafe impl Send for RawSendPtr {}
 
+impl RawSendPtr {
+    fn into_snapshot(mut self) -> Option<MKMapSnapshot> {
+        unsafe { MKMapSnapshot::from_raw_ptr(std::mem::replace(&mut self.0, std::ptr::null_mut())) }
+    }
+}
+
+impl Drop for RawSendPtr {
+    fn drop(&mut self) {
+        if !self.0.is_null() {
+            unsafe { ffi::mk_map_snapshot_release(self.0) }
+        }
+    }
+}
+
 // ============================================================================
 // Shared C callbacks
 // ============================================================================
@@ -432,7 +446,7 @@ impl Future for SnapshotterStartFuture {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         Pin::new(&mut self.inner).poll(cx).map(|r| {
             r.map_err(MapKitError::OperationFailed).and_then(|p| {
-                unsafe { MKMapSnapshot::from_raw_ptr(p.0) }
+                p.into_snapshot()
                     .ok_or_else(|| MapKitError::OperationFailed("null snapshot handle".to_string()))
             })
         })
