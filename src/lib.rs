@@ -154,7 +154,7 @@ pub use map_item_detail_view_controller::{
 /// Re-exports MapKit wrappers such as `MKFeatureVisibility`, `MKMapType`, and `MKMapView`.
 pub use map_view::{MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode};
 /// Re-exports MapKit wrappers such as `MKMapViewDelegate`.
-pub use map_view_delegate::MKMapViewDelegate;
+pub use map_view_delegate::{MKAnyOverlay, MKMapViewDelegate, MKMapViewDelegateRegistration};
 /// Re-exports MapKit wrappers such as `MKCircle`, `MKGeodesicPolyline`, and `MKMultiPoint`.
 pub use overlay::{
     MKCircle, MKGeodesicPolyline, MKMultiPoint, MKMultiPolygon, MKMultiPolyline, MKOverlay,
@@ -164,7 +164,7 @@ pub use overlay::{
 pub use overlay_renderer::{
     mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
     MKMultiPolygonRenderer, MKMultiPolylineRenderer, MKOverlayPathRenderer, MKOverlayRenderer,
-    MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer, MKZoomScale,
+    MKOverlayRendering, MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer, MKZoomScale,
 };
 /// Re-exports MapKit wrappers such as `MKLocalPointsOfInterestRequest`, `MKPointOfInterestCategory`, and `MKPointOfInterestFilter`.
 pub use point_of_interest::{
@@ -261,7 +261,9 @@ pub mod prelude {
     /// Re-exports MapKit wrappers such as `MKFeatureVisibility`, `MKMapType`, and `MKMapView`.
     pub use crate::map_view::{MKFeatureVisibility, MKMapType, MKMapView, MKUserTrackingMode};
     /// Re-exports MapKit wrappers such as `MKMapViewDelegate`.
-    pub use crate::map_view_delegate::MKMapViewDelegate;
+    pub use crate::map_view_delegate::{
+        MKAnyOverlay, MKMapViewDelegate, MKMapViewDelegateRegistration,
+    };
     /// Re-exports MapKit wrappers such as `MKCircle`, `MKGeodesicPolyline`, and `MKMultiPoint`.
     pub use crate::overlay::{
         MKCircle, MKGeodesicPolyline, MKMultiPoint, MKMultiPolygon, MKMultiPolyline, MKOverlay,
@@ -271,7 +273,8 @@ pub mod prelude {
     pub use crate::overlay_renderer::{
         mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
         MKMultiPolygonRenderer, MKMultiPolylineRenderer, MKOverlayPathRenderer, MKOverlayRenderer,
-        MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer, MKZoomScale,
+        MKOverlayRendering, MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer,
+        MKZoomScale,
     };
     /// Re-exports MapKit wrappers such as `MKLocalPointsOfInterestRequest`, `MKPointOfInterestCategory`, and `MKPointOfInterestFilter`.
     pub use crate::point_of_interest::{

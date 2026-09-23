@@ -734,6 +734,10 @@ impl MKMapView {
         self.remove_overlay(polygon)
     }
 
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
+    }
+
     pub(crate) const fn as_raw(&self) -> *mut c_void {
         self.raw.as_ptr()
     }

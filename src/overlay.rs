@@ -170,6 +170,10 @@ impl MKCircle {
         Ok(self.state()?.can_replace_map_content)
     }
 
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
+    }
+
     pub(crate) const fn as_raw(&self) -> *mut c_void {
         self.raw.as_ptr()
     }
@@ -264,6 +268,10 @@ impl MKPolyline {
     /// Wraps `MKPolyline.coordinates`.
     pub fn coordinates(&self) -> Result<Vec<MKCoordinate>, MapKitError> {
         Ok(self.state()?.coordinates)
+    }
+
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
     }
 
     pub(crate) const fn as_raw(&self) -> *mut c_void {
@@ -374,6 +382,10 @@ impl MKGeodesicPolyline {
         Ok(self.state()?.coordinates)
     }
 
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
+    }
+
     pub(crate) const fn as_raw(&self) -> *mut c_void {
         self.raw.as_ptr()
     }
@@ -482,6 +494,10 @@ impl MKPolygon {
     /// Wraps `MKPolygon.interiorPolygonCount`.
     pub fn interior_polygon_count(&self) -> Result<usize, MapKitError> {
         Ok(self.state()?.interior_polygon_count.unwrap_or_default())
+    }
+
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
     }
 
     pub(crate) const fn as_raw(&self) -> *mut c_void {
@@ -692,6 +708,10 @@ impl MKTileOverlay {
         }
     }
 
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
+    }
+
     pub(crate) const fn as_raw(&self) -> *mut c_void {
         self.raw.as_ptr()
     }
@@ -790,6 +810,10 @@ impl MKMultiPolyline {
     /// Wraps `MKMultiPolyline.polylines`.
     pub fn polylines(&self) -> Result<Vec<Vec<MKCoordinate>>, MapKitError> {
         Ok(self.state()?.polylines)
+    }
+
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
     }
 
     pub(crate) const fn as_raw(&self) -> *mut c_void {
@@ -892,6 +916,10 @@ impl MKMultiPolygon {
     /// Wraps `MKMultiPolygon.polygons`.
     pub fn polygons(&self) -> Result<Vec<Vec<MKCoordinate>>, MapKitError> {
         Ok(self.state()?.polygons)
+    }
+
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
     }
 
     pub(crate) const fn as_raw(&self) -> *mut c_void {

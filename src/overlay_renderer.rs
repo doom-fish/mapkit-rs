@@ -659,6 +659,35 @@ path_renderer_impl!(
     "MKMultiPolygonRenderer"
 );
 
+pub trait MKOverlayRendering {
+    #[doc(hidden)]
+    fn as_raw_renderer(&self) -> *mut c_void;
+}
+
+macro_rules! overlay_rendering_impl {
+    ($($name:ident),+ $(,)?) => {
+        $(
+            impl MKOverlayRendering for $name {
+                fn as_raw_renderer(&self) -> *mut c_void {
+                    self.raw.as_ptr()
+                }
+            }
+        )+
+    };
+}
+
+overlay_rendering_impl!(
+    MKOverlayRenderer,
+    MKOverlayPathRenderer,
+    MKCircleRenderer,
+    MKPolylineRenderer,
+    MKGradientPolylineRenderer,
+    MKPolygonRenderer,
+    MKTileOverlayRenderer,
+    MKMultiPolylineRenderer,
+    MKMultiPolygonRenderer,
+);
+
 /// Wraps `MKRoadWidthAtZoomScale`.
 pub fn mk_road_width_at_zoom_scale(zoom_scale: MKZoomScale) -> f64 {
     unsafe { ffi::mk_road_width_at_zoom_scale(zoom_scale) }

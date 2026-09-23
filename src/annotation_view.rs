@@ -159,6 +159,10 @@ pub struct MKAnnotationView {
 }
 
 impl MKAnnotationView {
+    pub(crate) const fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
+    }
+
     /// Creates a wrapper for `MKAnnotationView`.
     pub fn new<A: MKAnnotation + ?Sized>(
         annotation: Option<&A>,

@@ -1,5 +1,11 @@
 use core::ffi::{c_char, c_void};
 
+pub type MKContextCallback = unsafe extern "C" fn(*mut c_void);
+pub type MKMapViewEventCallback =
+    unsafe extern "C" fn(*mut c_void, i32, *mut c_void, *mut c_void, i64, i64, *mut c_char);
+pub type MKMapViewRendererCallback =
+    unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void, i32) -> *mut c_void;
+
 extern "C" {
     pub fn mk_map_view_new(width: f64, height: f64, out_error: *mut *mut c_char) -> *mut c_void;
     pub fn mk_map_view_state_json(
@@ -63,4 +69,16 @@ extern "C" {
         out_error: *mut *mut c_char,
     );
     pub fn mk_map_view_release(map_view: *mut c_void);
+    pub fn mk_map_view_set_delegate(
+        map_view: *mut c_void,
+        context: *mut c_void,
+        retain_context: MKContextCallback,
+        release_context: MKContextCallback,
+        on_event: MKMapViewEventCallback,
+        on_renderer: MKMapViewRendererCallback,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_void;
+    pub fn mk_map_view_clear_delegate(map_view: *mut c_void, proxy: *mut c_void);
+    pub fn mk_object_retain(object: *mut c_void) -> *mut c_void;
+    pub fn mk_object_release(object: *mut c_void);
 }
