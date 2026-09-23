@@ -2,7 +2,12 @@
 
 Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS 13+. APIs that MapKit introduced later, such as `MKMapItemRequest` (macOS 15) and the geocoding requests (macOS 26), return an error on older systems.
 
-> **Status:** v0.3.0 adds an executor-agnostic `async` feature (Tier-1 async API) on top of full audited coverage for the non-exempt macOS 26.2 MapKit SDK surface.
+> **Status:** v0.4.0 connects `MKMapViewDelegate` to `MKMapView`, so overlays get renderers and map events arrive, requires the main thread for AppKit views, and makes the synchronous waits race-free and cancellable. `COVERAGE.md` explains what the audited coverage numbers include.
+
+```toml
+[dependencies]
+mapkit = "0.4"
+```
 
 ## Quick start
 
@@ -32,7 +37,7 @@ pollster, …):
 
 ```toml
 [dependencies]
-mapkit = { version = "0.3", features = ["async"] }
+mapkit = { version = "0.4", features = ["async"] }
 ```
 
 ```rust,no_run

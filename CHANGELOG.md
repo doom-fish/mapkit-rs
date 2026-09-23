@@ -1,5 +1,72 @@
 # Changelog
 
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.4.0] - Unreleased
+
+### Added
+
+- `MKMapView::set_delegate` connects an `MKMapViewDelegate` through a Swift
+  proxy and returns an `MKMapViewDelegateRegistration`; dropping it removes
+  the delegate. The delegate lives in a `doom-fish-utils` `CallbackContext`
+  that the proxy keeps alive until MapKit can no longer call it. Region,
+  loading, rendering, selection, drag, user-location and tracking-mode
+  callbacks arrive, and `map_view_renderer_for_overlay` supplies the renderers
+  that make overlays draw. Re-entrant callbacks are skipped and panics are
+  contained.
+- `MKAnyOverlay`, one variant per overlay type, passed to
+  `map_view_renderer_for_overlay`.
+- `MKOverlayRendering`, implemented by every renderer type.
+- `tests/main_thread.rs`, a harness-free test binary that runs the view round
+  trips and the delegate on the process main thread.
+
+### Fixed
+
+- A dropped `SnapshotterStartFuture` leaked the snapshot it had received or
+  received later.
+- The synchronous `MKMapSnapshotter::start` read its result without a lock
+  after a timeout, while a late completion could still write it, and never
+  cancelled. The result is now lock-protected and a timeout cancels the
+  snapshot.
+- On the main thread, synchronous search, directions, geocoding, Look Around,
+  map-item and completer calls spun the run loop, re-entering the app's event
+  handling mid-call. They now return an error there. Off the main thread their
+  result is lock-protected, and a timeout cancels the request.
+- A caller-supplied timeout such as
+  `MKLocalSearchCompleter::refresh_with_timeout(Duration::MAX)` trapped in
+  `Int(timeoutSeconds * 1000)`. Timeouts are clamped to one day.
+- Creating an `MKGeocodingRequest` or `MKReverseGeocodingRequest` before macOS
+  26 ran macOS 26 code. It now returns an error.
+- `COVERAGE.md` and the audits no longer present the Rust-only control and
+  view-controller models or the unconnected `MKMapViewDelegate` as bridged
+  AppKit objects. The README states the macOS 13 minimum and the thread rules.
+
+### Changed
+
+- **Breaking:** `MKMapView`, the annotation views and `MKUserTrackingButton`
+  return an error when used off the main thread instead of hopping to the main
+  queue with `DispatchQueue.main.sync`, which deadlocked when the main thread
+  was waiting.
+- **Breaking:** synchronous search, directions, geocoding, Look Around,
+  map-item and completer calls return an error on the main thread.
+- **Breaking:** `MKMapViewDelegate` now requires `Send + 'static`.
+  `map_view_renderer_for_overlay` takes an `&MKAnyOverlay` and returns
+  `Option<Box<dyn MKOverlayRendering>>`.
+- **Breaking:** the minimum supported Rust version is now 1.82 (was 1.76).
+- `doom-fish-utils` requirement is now `>=0.4.1, <0.5`.
+
+### Removed
+
+- **Breaking:** the `MKMapViewDelegate` methods the bridge does not deliver:
+  `map_view_view_for_annotation`, `map_view_did_add_annotation_views`,
+  `map_view_selection_accessory_for_annotation`,
+  `map_view_did_add_overlay_renderers` and
+  `map_view_cluster_annotation_for_member_annotations`.
+- The empty `MapKitBridge.h` header and its `publicHeadersPath`.
+
 ## [0.3.9] - 2026-05-20
 
 - Migrated local `take_string` body to call `doom_fish_utils::ffi_string::take_owned_cstring_c`. Centralises the duplicated FFI take-string pattern fleet-wide. No public API change.
@@ -19,8 +86,6 @@
 ## [0.3.5] - 2026-05-19
 
 - Bump MSRV from 1.70 to 1.76 to match fleet baseline.
-
-All notable changes to this project will be documented in this file.
 
 ## [0.3.4] - 2026-05-18
 
