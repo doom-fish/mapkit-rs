@@ -15,7 +15,6 @@ let package = Package(
     targets: [
         .target(
             name: "MapKitBridge",
-            path: "Sources/MapKitBridge",
-            publicHeadersPath: "include")
+            path: "Sources/MapKitBridge")
     ]
 )
