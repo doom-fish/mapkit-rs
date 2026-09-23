@@ -115,7 +115,7 @@ public func mk_local_search_start_json(
 
     let localSearch = mkrBorrow(search, as: MKLocalSearch.self)
     do {
-        let response = try mkrAwaitOnMain { completion in
+        let response = try mkrAwaitOnMain(cancel: { localSearch.cancel() }) { completion in
             localSearch.start { response, error in
                 if let response {
                     completion(.success(response))

@@ -94,7 +94,7 @@ public func mk_look_around_scene_request_get_scene(
 
     let sceneRequest = mkrBorrow(request, as: MKLookAroundSceneRequest.self)
     do {
-        let scene: MKLookAroundScene = try mkrAwaitOnMain { completion in
+        let scene: MKLookAroundScene = try mkrAwaitOnMain(cancel: { sceneRequest.cancel() }) { completion in
             sceneRequest.getSceneWithCompletionHandler { scene, error in
                 if let scene {
                     completion(.success(scene))
@@ -170,7 +170,7 @@ public func mk_look_around_snapshotter_get_snapshot(
 
     let bridge = mkrBorrow(snapshotter, as: MKLookAroundSnapshotter.self)
     do {
-        let snapshot: MKLookAroundSnapshotter.Snapshot = try mkrAwaitOnMain { completion in
+        let snapshot: MKLookAroundSnapshotter.Snapshot = try mkrAwaitOnMain(cancel: { bridge.cancel() }) { completion in
             bridge.getSnapshotWithCompletionHandler { snapshot, error in
                 if let snapshot {
                     completion(.success(snapshot))

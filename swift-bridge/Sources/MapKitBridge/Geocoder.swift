@@ -124,7 +124,7 @@ public func mk_geocoding_request_get_map_items_json(
 
     do {
         let geocoder = mkrBorrow(request, as: MKGeocodingRequest.self)
-        let mapItems = try mkrAwaitOnMain { completion in
+        let mapItems = try mkrAwaitOnMain(cancel: { geocoder.cancel() }) { completion in
             geocoder.getMapItems { mapItems, error in
                 if let mapItems {
                     completion(.success(mapItems))
@@ -244,7 +244,7 @@ public func mk_reverse_geocoding_request_get_map_items_json(
 
     do {
         let geocoder = mkrBorrow(request, as: MKReverseGeocodingRequest.self)
-        let mapItems = try mkrAwaitOnMain { completion in
+        let mapItems = try mkrAwaitOnMain(cancel: { geocoder.cancel() }) { completion in
             geocoder.getMapItems { mapItems, error in
                 if let mapItems {
                     completion(.success(mapItems))

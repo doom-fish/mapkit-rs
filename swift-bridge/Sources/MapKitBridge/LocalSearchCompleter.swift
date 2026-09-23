@@ -195,7 +195,7 @@ public func mk_local_search_completer_refresh_json(
     do {
         let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
         let timeoutSeconds = max(Double(timeoutMillis) / 1000, 0.1)
-        let results = try mkrAwaitOnMain(timeoutSeconds: timeoutSeconds) { completion in
+        let results = try mkrAwaitOnMain(timeoutSeconds: timeoutSeconds, cancel: { bridge.cancel() }) { completion in
             if !bridge.isSearching {
                 completion(.success(bridge.results.map(mkrEncodeLocalSearchCompletion)))
                 return

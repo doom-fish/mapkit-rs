@@ -129,7 +129,7 @@ public func mk_directions_calculate_json(
 
     let routeService = mkrBorrow(directions, as: MKDirections.self)
     do {
-        let response = try mkrAwaitOnMain { completion in
+        let response = try mkrAwaitOnMain(cancel: { routeService.cancel() }) { completion in
             routeService.calculate { response, error in
                 if let response {
                     completion(.success(response))
@@ -161,7 +161,7 @@ public func mk_directions_calculate_eta_json(
 
     let routeService = mkrBorrow(directions, as: MKDirections.self)
     do {
-        let response = try mkrAwaitOnMain { completion in
+        let response = try mkrAwaitOnMain(cancel: { routeService.cancel() }) { completion in
             routeService.calculateETA { response, error in
                 if let response {
                     completion(.success(response))

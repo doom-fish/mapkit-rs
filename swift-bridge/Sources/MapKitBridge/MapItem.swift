@@ -254,7 +254,7 @@ public func mk_map_item_request_get_map_item_json(
 
     let bridge = mkrBorrow(request, as: MKMapItemRequest.self)
     do {
-        let mapItem: MKMapItem = try mkrAwaitOnMain { completion in
+        let mapItem: MKMapItem = try mkrAwaitOnMain(cancel: { bridge.cancel() }) { completion in
             bridge.getMapItem(completionHandler: { mapItem, error in
                 if let mapItem {
                     completion(.success(mapItem))

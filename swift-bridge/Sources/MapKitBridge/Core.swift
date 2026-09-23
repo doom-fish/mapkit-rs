@@ -121,8 +121,32 @@ public func mkrSyncOnMain<T>(_ operation: @escaping () throws -> T) throws -> T 
     return try outcome.get()
 }
 
+final class MKRLockedOutcome<T> {
+    private let lock = NSLock()
+    private var value: Result<T, Error>?
+
+    func set(_ result: Result<T, Error>) {
+        lock.lock()
+        if value == nil {
+            value = result
+        }
+        lock.unlock()
+    }
+
+    func get() -> Result<T, Error>? {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 func mkrBridgeError(_ message: String) -> NSError {
     NSError(domain: "mapkit-rs", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
+}
+
+func mkrDeadline(seconds: TimeInterval) -> DispatchTime {
+    let clamped = seconds.isFinite ? min(max(seconds, 0), 86_400) : 86_400
+    return DispatchTime.now() + .milliseconds(Int(clamped * 1000))
 }
 
 func mkrOnMainThread<T>(_ operation: () throws -> T) throws -> T {
@@ -134,52 +158,35 @@ func mkrOnMainThread<T>(_ operation: () throws -> T) throws -> T {
 
 public func mkrAwaitOnMain<T>(
     timeoutSeconds: TimeInterval = 30,
+    cancel: (() -> Void)? = nil,
     _ operation: @escaping (@escaping (Result<T, Error>) -> Void) -> Void
 ) throws -> T {
-    if Thread.isMainThread {
-        var outcome: Result<T, Error>?
-        operation { outcome = $0 }
-        let deadline = Date(timeIntervalSinceNow: timeoutSeconds)
-        while outcome == nil && deadline.timeIntervalSinceNow > 0 {
-            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.01))
-        }
-        guard let outcome else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "operation timed out"]
-            )
-        }
-        return try outcome.get()
+    guard !Thread.isMainThread else {
+        throw mkrBridgeError(
+            "MapKit delivers this completion on the main queue, so the synchronous call cannot wait for it on the main thread; call it from another thread or use the async API"
+        )
     }
 
     let semaphore = DispatchSemaphore(value: 0)
-    var outcome: Result<T, Error>?
+    let outcome = MKRLockedOutcome<T>()
     DispatchQueue.main.async {
         operation {
-            outcome = $0
+            outcome.set($0)
             semaphore.signal()
         }
     }
 
-    let timeout = DispatchTime.now() + .milliseconds(Int(timeoutSeconds * 1000))
-    if semaphore.wait(timeout: timeout) == .timedOut {
-        throw NSError(
-            domain: "mapkit-rs",
-            code: -1,
-            userInfo: [NSLocalizedDescriptionKey: "operation timed out"]
-        )
+    if semaphore.wait(timeout: mkrDeadline(seconds: timeoutSeconds)) == .timedOut {
+        if let cancel {
+            DispatchQueue.main.async(execute: cancel)
+        }
+        throw mkrBridgeError("operation timed out")
     }
 
-    guard let outcome else {
-        throw NSError(
-            domain: "mapkit-rs",
-            code: -1,
-            userInfo: [NSLocalizedDescriptionKey: "operation completed without a result"]
-        )
+    guard let result = outcome.get() else {
+        throw mkrBridgeError("operation completed without a result")
     }
-
-    return try outcome.get()
+    return try result.get()
 }
 
 public func mkrImageByteLength(_ image: NSImage) -> Int {

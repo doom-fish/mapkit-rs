@@ -1,6 +1,21 @@
+use std::ffi::c_void;
 use std::thread;
+use std::time::Duration;
 
 use mapkit::prelude::*;
+
+#[link(name = "CoreFoundation", kind = "framework")]
+extern "C" {
+    static kCFRunLoopDefaultMode: *const c_void;
+    fn CFRunLoopRunInMode(mode: *const c_void, seconds: f64, return_after: u8) -> i32;
+}
+
+fn pump_main_run_loop_until_done<T>(worker: thread::JoinHandle<T>) -> T {
+    while !worker.is_finished() {
+        unsafe { CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.02, 0) };
+    }
+    worker.join().expect("worker thread")
+}
 
 const fn apple_park() -> MKCoordinate {
     MKCoordinate::new(37.3349, -122.0090)
@@ -122,8 +137,26 @@ fn views_refuse_other_threads() {
     }
 }
 
+fn synchronous_waits_refuse_the_main_thread() {
+    let search = MKLocalSearch::new(&MKLocalSearchRequest::new("coffee")).unwrap();
+    let error = search
+        .start()
+        .map(drop)
+        .expect_err("a synchronous search must not spin the main run loop");
+    assert!(error.to_string().contains("main thread"), "{error}");
+}
+
+fn completer_accepts_an_unbounded_timeout() {
+    let worker = thread::spawn(|| {
+        let completer = MKLocalSearchCompleter::new().unwrap();
+        completer.refresh_with_timeout(Duration::MAX)
+    });
+    let results = pump_main_run_loop_until_done(worker).expect("completer results");
+    assert!(results.is_empty());
+}
+
 fn main() {
-    let checks: [(&str, fn()); 4] = [
+    let checks: [(&str, fn()); 6] = [
         ("map_view_round_trip", map_view_round_trip),
         ("annotation_views_build", annotation_views_build),
         (
@@ -131,6 +164,14 @@ fn main() {
             user_tracking_button_updates_map_view,
         ),
         ("views_refuse_other_threads", views_refuse_other_threads),
+        (
+            "synchronous_waits_refuse_the_main_thread",
+            synchronous_waits_refuse_the_main_thread,
+        ),
+        (
+            "completer_accepts_an_unbounded_timeout",
+            completer_accepts_an_unbounded_timeout,
+        ),
     ];
     for (name, check) in checks {
         check();

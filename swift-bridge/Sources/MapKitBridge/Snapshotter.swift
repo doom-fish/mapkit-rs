@@ -66,29 +66,23 @@ public func mk_map_snapshotter_start(
     let bridge = mkrBorrow(snapshotter, as: MKMapSnapshotter.self)
     do {
         let semaphore = DispatchSemaphore(value: 0)
-        var outcome: Result<MKMapSnapshotter.Snapshot, Error>?
+        let outcome = MKRLockedOutcome<MKMapSnapshotter.Snapshot>()
         bridge.start(with: DispatchQueue.global()) { snapshot, error in
             if let snapshot {
-                outcome = .success(snapshot)
+                outcome.set(.success(snapshot))
             } else {
-                outcome = .failure(error ?? NSError(
-                    domain: "mapkit-rs",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "MKMapSnapshotter failed without a snapshot"]
-                ))
+                outcome.set(.failure(error ?? mkrBridgeError("MKMapSnapshotter failed without a snapshot")))
             }
             semaphore.signal()
         }
-        _ = semaphore.wait(timeout: .now() + .seconds(30))
-        guard let outcome else {
-            throw NSError(
-                domain: "mapkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "MKMapSnapshotter timed out"]
-            )
+        if semaphore.wait(timeout: mkrDeadline(seconds: 30)) == .timedOut {
+            bridge.cancel()
+            throw mkrBridgeError("MKMapSnapshotter timed out")
         }
-        let snapshot = try outcome.get()
-        return mkrRetain(snapshot)
+        guard let result = outcome.get() else {
+            throw mkrBridgeError("MKMapSnapshotter completed without a result")
+        }
+        return mkrRetain(try result.get())
     } catch {
         mkrSetError(outError, error)
         return nil
