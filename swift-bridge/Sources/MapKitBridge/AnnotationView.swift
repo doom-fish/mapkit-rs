@@ -205,7 +205,7 @@ public func mk_annotation_view_new(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
     do {
-        let view = try mkrSyncOnMain {
+        let view = try mkrOnMainThread {
             MKAnnotationView(
                 annotation: try mkrBorrowAnnotation(annotation),
                 reuseIdentifier: reuseIdentifier.map(String.init(cString:))
@@ -230,7 +230,7 @@ public func mk_annotation_view_state_json(
 
     do {
         let view = mkrBorrow(annotationView, as: MKAnnotationView.self)
-        let payload = try mkrSyncOnMain { mkrEncodeAnnotationViewState(view) }
+        let payload = try mkrOnMainThread { mkrEncodeAnnotationViewState(view) }
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -252,7 +252,7 @@ public func mk_annotation_view_apply_options_json(
     do {
         let view = mkrBorrow(annotationView, as: MKAnnotationView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRAnnotationViewOptionsPayload.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             if let centerOffset = payload.centerOffset {
                 view.centerOffset = mkrScreenPoint(from: centerOffset)
             }
@@ -319,7 +319,7 @@ public func mk_annotation_view_prepare_for_reuse(
 
     do {
         let view = mkrBorrow(annotationView, as: MKAnnotationView.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             view.prepareForReuse()
         }
     } catch {
@@ -339,7 +339,7 @@ public func mk_annotation_view_prepare_for_display(
 
     do {
         let view = mkrBorrow(annotationView, as: MKAnnotationView.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             view.prepareForDisplay()
         }
     } catch {
@@ -360,7 +360,7 @@ public func mk_marker_annotation_view_new(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
     do {
-        let view = try mkrSyncOnMain {
+        let view = try mkrOnMainThread {
             MKMarkerAnnotationView(
                 annotation: try mkrBorrowAnnotation(annotation),
                 reuseIdentifier: reuseIdentifier.map(String.init(cString:))
@@ -385,7 +385,7 @@ public func mk_marker_annotation_view_state_json(
 
     do {
         let view = mkrBorrow(annotationView, as: MKMarkerAnnotationView.self)
-        let payload = try mkrSyncOnMain {
+        let payload = try mkrOnMainThread {
             MKRMarkerAnnotationViewStatePayload(
                 base: mkrEncodeAnnotationViewState(view),
                 titleVisibility: mkrEncodeFeatureVisibility(view.titleVisibility),
@@ -415,7 +415,7 @@ public func mk_marker_annotation_view_apply_options_json(
     do {
         let view = mkrBorrow(annotationView, as: MKMarkerAnnotationView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRMarkerAnnotationViewOptionsPayload.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             if let titleVisibility = payload.titleVisibility {
                 view.titleVisibility = mkrFeatureVisibility(from: titleVisibility)
             }
@@ -447,7 +447,7 @@ public func mk_pin_annotation_view_new(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
     do {
-        let view = try mkrSyncOnMain {
+        let view = try mkrOnMainThread {
             MKPinAnnotationView(
                 annotation: try mkrBorrowAnnotation(annotation),
                 reuseIdentifier: reuseIdentifier.map(String.init(cString:))
@@ -472,7 +472,7 @@ public func mk_pin_annotation_view_state_json(
 
     do {
         let view = mkrBorrow(annotationView, as: MKPinAnnotationView.self)
-        let payload = try mkrSyncOnMain {
+        let payload = try mkrOnMainThread {
             MKRPinAnnotationViewStatePayload(
                 base: mkrEncodeAnnotationViewState(view),
                 animatesDrop: view.animatesDrop,
@@ -500,7 +500,7 @@ public func mk_pin_annotation_view_apply_options_json(
     do {
         let view = mkrBorrow(annotationView, as: MKPinAnnotationView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRPinAnnotationViewOptionsPayload.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             if let animatesDrop = payload.animatesDrop {
                 view.animatesDrop = animatesDrop
             }
@@ -526,7 +526,7 @@ public func mk_user_location_view_new(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
     do {
-        let view = try mkrSyncOnMain {
+        let view = try mkrOnMainThread {
             MKUserLocationView(
                 annotation: try mkrBorrowAnnotation(annotation),
                 reuseIdentifier: reuseIdentifier.map(String.init(cString:))

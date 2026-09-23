@@ -121,6 +121,17 @@ public func mkrSyncOnMain<T>(_ operation: @escaping () throws -> T) throws -> T 
     return try outcome.get()
 }
 
+func mkrBridgeError(_ message: String) -> NSError {
+    NSError(domain: "mapkit-rs", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
+}
+
+func mkrOnMainThread<T>(_ operation: () throws -> T) throws -> T {
+    guard Thread.isMainThread else {
+        throw mkrBridgeError("AppKit views must be created and used on the main thread")
+    }
+    return try operation()
+}
+
 public func mkrAwaitOnMain<T>(
     timeoutSeconds: TimeInterval = 30,
     _ operation: @escaping (@escaping (Result<T, Error>) -> Void) -> Void

@@ -18,7 +18,7 @@ public func mk_user_tracking_button_state_json(
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        let payload = try mkrSyncOnMain {
+        let payload = try mkrOnMainThread {
             let visible: Bool
             if #available(macOS 14.0, *) {
                 visible = view.showsUserTrackingButton
@@ -53,7 +53,7 @@ public func mk_user_tracking_button_set_visible(
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             guard #available(macOS 14.0, *) else {
                 throw NSError(
                     domain: "mapkit-rs",
@@ -83,7 +83,7 @@ public func mk_user_tracking_button_set_tracking_mode(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let payload = try mkrDecodeJSON(modeJSON, as: MKRUserTrackingModePayload.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             guard #available(macOS 11.0, *) else {
                 throw NSError(
                     domain: "mapkit-rs",

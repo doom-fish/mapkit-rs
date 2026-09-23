@@ -202,7 +202,7 @@ public func mk_map_view_new(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
     do {
-        let mapView = try mkrSyncOnMain {
+        let mapView = try mkrOnMainThread {
             MKMapView(frame: NSRect(x: 0, y: 0, width: width, height: height))
         }
         return mkrRetain(mapView)
@@ -224,7 +224,7 @@ public func mk_map_view_state_json(
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        let payload = try mkrSyncOnMain { mkrEncodeMapViewState(view) }
+        let payload = try mkrOnMainThread { mkrEncodeMapViewState(view) }
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -246,7 +246,7 @@ public func mk_map_view_apply_options_json(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRMapViewOptionsPayload.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             if let mapType = payload.mapType {
                 view.mapType = mkrMapType(from: mapType)
             }
@@ -374,7 +374,7 @@ public func mk_map_view_region_that_fits_json(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRCoordinateRegionPayload.self)
-        let fitted = try mkrSyncOnMain {
+        let fitted = try mkrOnMainThread {
             view.regionThatFits(mkrRegion(from: payload))
         }
         return mkrCString(try mkrEncodeJSON(mkrEncodeRegion(fitted)))
@@ -398,7 +398,7 @@ public func mk_map_view_map_rect_that_fits_json(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRMapRectPayload.self)
-        let fitted = try mkrSyncOnMain {
+        let fitted = try mkrOnMainThread {
             view.mapRectThatFits(mkrMapRect(from: payload))
         }
         return mkrCString(try mkrEncodeJSON(mkrEncodeMapRect(fitted)))
@@ -422,7 +422,7 @@ public func mk_map_view_convert_coordinate_to_point_json(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRCoordinatePayload.self)
-        let point = try mkrSyncOnMain {
+        let point = try mkrOnMainThread {
             view.convert(mkrCoordinate(from: payload), toPointTo: nil)
         }
         return mkrCString(try mkrEncodeJSON(mkrEncodeScreenPoint(point)))
@@ -446,7 +446,7 @@ public func mk_map_view_convert_point_to_coordinate_json(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRScreenPointPayload.self)
-        let coordinate = try mkrSyncOnMain {
+        let coordinate = try mkrOnMainThread {
             view.convert(mkrScreenPoint(from: payload), toCoordinateFrom: nil)
         }
         return mkrCString(try mkrEncodeJSON(mkrEncodeCoordinate(coordinate)))
@@ -468,7 +468,7 @@ public func mk_map_view_user_location(
 
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
-        return try mkrSyncOnMain { mkrRetain(view.userLocation) }
+        return try mkrOnMainThread { mkrRetain(view.userLocation) }
     } catch {
         mkrSetError(outError, error)
         return nil
@@ -514,7 +514,7 @@ public func mk_map_view_add_annotation(
                 userInfo: [NSLocalizedDescriptionKey: "missing MKAnnotation"]
             )
         }
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             view.addAnnotation(model)
         }
     } catch {
@@ -542,7 +542,7 @@ public func mk_map_view_remove_annotation(
                 userInfo: [NSLocalizedDescriptionKey: "missing MKAnnotation"]
             )
         }
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             view.removeAnnotation(model)
         }
     } catch {
@@ -566,7 +566,7 @@ public func mk_map_view_add_overlay(
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let model = try mkrBorrowOverlay(overlay)
         let level = try mkrDecodeOverlayLevel(levelJSON)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             view.addOverlay(model, level: level)
         }
     } catch {
@@ -588,7 +588,7 @@ public func mk_map_view_remove_overlay(
     do {
         let view = mkrBorrow(mapView, as: MKMapView.self)
         let model = try mkrBorrowOverlay(overlay)
-        try mkrSyncOnMain {
+        try mkrOnMainThread {
             view.removeOverlay(model)
         }
     } catch {
