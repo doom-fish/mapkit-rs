@@ -2,7 +2,7 @@
 
 This crate audits the requested MapKit headers and groups them into the logical areas shipped in `mapkit` v0.2.3.
 
-The audited public macOS 26.2 surface is now fully covered for non-exempt declarations: 241 verified symbols, 0 gaps, and 2 exempt SDK items tracked in `COVERAGE_AUDIT.md`.
+The audited public macOS 26.2 surface is covered for non-exempt declarations: 241 verified symbols, 0 gaps, and 2 exempt SDK items tracked in `COVERAGE_AUDIT.md`. The count is of top-level declarations, and nine of the verified UI types are Rust-side models rather than AppKit objects (see below). The macOS 26.5 MapKit headers are identical to 26.2. The macOS 27.0 SDK adds eleven `MKPointOfInterestCategory` constants (airport terminal, automotive, commercial-vehicle and motorbike dealerships, information booth, picnic area, ranger station, rest area, scenic view, ticket office and visitor center) that are not wrapped yet.
 
 ## Implemented
 
@@ -25,7 +25,8 @@ The audited public macOS 26.2 surface is now fully covered for non-exempt declar
 | MapItem | `MKMapItem` / `MKPlacemark` payloads, location/address-based construction, alternate identifiers, launch-option constants, and brokered request helpers | ✅ | `src/map_item.rs`, `swift-bridge/Sources/MapKitBridge/MapItem.swift` |
 | Errors | `MKErrorCode`, `MKErrorDomain`, and typed `NSErrorInfo` helpers for MapKit failures | ✅ | `src/error.rs` |
 | ClusterAnnotation | `MKClusterAnnotation` construction and title/subtitle/member-count access | ✅ | `src/cluster_annotation.rs`, `ClusterAnnotation.swift` |
-| Controls + delegates | `MKCompassButton`, `MKPitchControl`, `MKZoomControl`, `MKSelectionAccessory`, `MKMapItemDetailViewController`, `MKLookAroundViewController`, and `MKMapViewDelegate` | ✅ | Headless-safe Rust models/traits in `src/controls.rs`, `src/selection_accessory.rs`, `src/map_item_detail_view_controller.rs`, `src/look_around_view_controller.rs`, and `src/map_view_delegate.rs` |
+| MapViewDelegate | `MKMapViewDelegate` region, loading, rendering, selection, drag, user-location and tracking-mode callbacks, and `mapView(_:rendererFor:)` | ✅ | `MKMapView::set_delegate` installs a Swift proxy (`src/map_view_delegate.rs`, `MapViewDelegate.swift`). `mapView(_:viewFor:)`, the `didAdd` callbacks, cluster annotations and selection accessories are not bridged. |
+| Controls + controllers | `MKCompassButton`, `MKPitchControl`, `MKZoomControl`, `MKSelectionAccessory`, `MKMapItemDetailSelectionAccessoryPresentationStyle`, `MKMapItemDetailViewController`, `MKLookAroundViewController`, and their delegates | 🟡 model only | Rust-side models in `src/controls.rs`, `src/selection_accessory.rs`, `src/map_item_detail_view_controller.rs`, and `src/look_around_view_controller.rs`. No AppKit object is created, and their delegates are only called by the models' own methods. |
 | UserTrackingButton | macOS-equivalent user-tracking button visibility + tracking mode controls via `MKMapView` | ✅ | `src/user_tracking_button.rs`, `UserTrackingButton.swift` |
 
 ## Exempt
@@ -37,5 +38,5 @@ The audited public macOS 26.2 surface is now fully covered for non-exempt declar
 
 ## Notes
 
-- UI/controller symbols that are AppKit-driven in Apple's SDK are exposed as headless-safe Rust models and traits rather than direct `NSView` / `NSViewController` bindings.
+- `MKMapView`, the annotation views and `MKUserTrackingButton` are real AppKit objects and must be used on the main thread. The controls, selection accessories and view controllers listed above are Rust-side models, not `NSView` / `NSViewController` bindings.
 - `COVERAGE_AUDIT.md` is the source-of-truth symbol ledger used to track verified vs exempt declarations.

@@ -6,6 +6,8 @@ GAPS: 0
 EXEMPT: 2
 COVERAGE_PCT: 100.0%
 
+Counts are of top-level declarations. Nine VERIFIED rows are Rust-side models with no AppKit object behind them, marked *(Rust model)* below: `MKCompassButton`, `MKPitchControl`, `MKZoomControl`, `MKSelectionAccessory`, `MKMapItemDetailSelectionAccessoryPresentationStyle`, `MKLookAroundViewController`, `MKLookAroundViewControllerDelegate`, `MKMapItemDetailViewController` and `MKMapItemDetailViewControllerDelegate`. `MKMapViewDelegate` is bridged through `MKMapView::set_delegate` for a subset of its callbacks. The macOS 26.5 headers match 26.2; macOS 27.0 adds eleven `MKPointOfInterestCategory` constants that are not wrapped.
+
 This audit counts named top-level macOS declarations from MapKit.framework headers (interfaces, protocols, typedefs/enums/structs, exported constants, and top-level functions). Objective-C categories were not counted as standalone symbols.
 
 ## 🟢 VERIFIED
@@ -190,7 +192,7 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKUserLocationView | interface | MKUserLocationView.h | MKUserLocationView (src/annotation_view.rs) |
 | MKZoomScale | typedef | MKGeometry.h | MKZoomScale (src/overlay_renderer.rs) |
 
-| MKCompassButton | interface | MKCompassButton.h | MKCompassButton (src/controls.rs) |
+| MKCompassButton | interface | MKCompassButton.h | MKCompassButton (src/controls.rs) *(Rust model)* |
 | MKGeoJSONDecoder | interface | MKGeoJSONSerialization.h | MKGeoJSONDecoder (src/geojson.rs) |
 | MKGeoJSONFeature | interface | MKGeoJSONSerialization.h | MKGeoJSONFeature (src/geojson.rs) |
 | MKGeoJSONObject | protocol | MKGeoJSONSerialization.h | MKGeoJSONObject + MKGeoJSONObjectValue (src/geojson.rs) |
@@ -227,8 +229,8 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKStringFromMapRect | function | MKGeometry.h | mk_string_from_map_rect / MKMapRect::string_representation (src/geometry.rs) |
 | MKStringFromMapSize | function | MKGeometry.h | mk_string_from_map_size / MKMapSize::string_representation (src/geometry.rs) |
 | MKLookAroundBadgePosition | enum | MKLookAroundViewController.h | MKLookAroundBadgePosition (src/look_around_view_controller.rs) |
-| MKLookAroundViewController | interface | MKLookAroundViewController.h | MKLookAroundViewController (src/look_around_view_controller.rs) |
-| MKLookAroundViewControllerDelegate | protocol | MKLookAroundViewController.h | MKLookAroundViewControllerDelegate (src/look_around_view_controller.rs) |
+| MKLookAroundViewController | interface | MKLookAroundViewController.h | MKLookAroundViewController (src/look_around_view_controller.rs) *(Rust model)* |
+| MKLookAroundViewControllerDelegate | protocol | MKLookAroundViewController.h | MKLookAroundViewControllerDelegate (src/look_around_view_controller.rs) *(Rust model)* |
 | MKLaunchOptionsCameraKey | constant | MKMapItem.h | MKMapItem::launch_options_camera_key (src/map_item.rs) |
 | MKLaunchOptionsDirectionsModeCycling | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_cycling (src/map_item.rs) |
 | MKLaunchOptionsDirectionsModeDefault | constant | MKMapItem.h | MKMapItem::launch_options_directions_mode_default (src/map_item.rs) |
@@ -241,18 +243,18 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKLaunchOptionsMapTypeKey | constant | MKMapItem.h | MKMapItem::launch_options_map_type_key (src/map_item.rs) |
 | MKLaunchOptionsShowsTrafficKey | constant | MKMapItem.h | MKMapItem::launch_options_shows_traffic_key (src/map_item.rs) |
 | MKMapItemTypeIdentifier | constant | MKMapItem.h | MKMapItem::type_identifier (src/map_item.rs) |
-| MKMapItemDetailViewController | interface | MKMapItemDetailViewController.h | MKMapItemDetailViewController (src/map_item_detail_view_controller.rs) |
-| MKMapItemDetailViewControllerDelegate | protocol | MKMapItemDetailViewController.h | MKMapItemDetailViewControllerDelegate (src/map_item_detail_view_controller.rs) |
+| MKMapItemDetailViewController | interface | MKMapItemDetailViewController.h | MKMapItemDetailViewController (src/map_item_detail_view_controller.rs) *(Rust model)* |
+| MKMapItemDetailViewControllerDelegate | protocol | MKMapItemDetailViewController.h | MKMapItemDetailViewControllerDelegate (src/map_item_detail_view_controller.rs) *(Rust model)* |
 | MKMapItemIdentifier | interface | MKMapItemIdentifier.h | MKMapItemIdentifier (src/map_item.rs) |
 | MKMapItemRequest | interface | MKMapItemRequest.h | MKMapItemRequest (src/map_item.rs) |
-| MKMapViewDelegate | protocol | MKMapView.h | MKMapViewDelegate (src/map_view_delegate.rs) |
-| MKPitchControl | interface | MKPitchControl.h | MKPitchControl (src/controls.rs) |
+| MKMapViewDelegate | protocol | MKMapView.h | MKMapViewDelegate (src/map_view_delegate.rs) via `MKMapView::set_delegate`; subset of callbacks |
+| MKPitchControl | interface | MKPitchControl.h | MKPitchControl (src/controls.rs) *(Rust model)* |
 | MKMapItemDetailSelectionAccessoryCalloutStyle | enum | MKSelectionAccessory.h | MKMapItemDetailSelectionAccessoryCalloutStyle (src/selection_accessory.rs) |
-| MKMapItemDetailSelectionAccessoryPresentationStyle | interface | MKSelectionAccessory.h | MKMapItemDetailSelectionAccessoryPresentationStyle (src/selection_accessory.rs) |
-| MKSelectionAccessory | interface | MKSelectionAccessory.h | MKSelectionAccessory (src/selection_accessory.rs) |
+| MKMapItemDetailSelectionAccessoryPresentationStyle | interface | MKSelectionAccessory.h | MKMapItemDetailSelectionAccessoryPresentationStyle (src/selection_accessory.rs) *(Rust model)* |
+| MKSelectionAccessory | interface | MKSelectionAccessory.h | MKSelectionAccessory (src/selection_accessory.rs) *(Rust model)* |
 | MKErrorCode | enum | MKTypes.h | MKErrorCode (src/error.rs) |
 | MKErrorDomain | constant | MKTypes.h | mk_error_domain() (src/error.rs) |
-| MKZoomControl | interface | MKZoomControl.h | MKZoomControl (src/controls.rs) |
+| MKZoomControl | interface | MKZoomControl.h | MKZoomControl (src/controls.rs) *(Rust model)* |
 
 ## 🔴 GAPS
 _None._

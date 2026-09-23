@@ -1,6 +1,6 @@
 # mapkit
 
-Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS.
+Safe Rust bindings for Apple's [MapKit](https://developer.apple.com/documentation/mapkit) framework on macOS 13+. APIs that MapKit introduced later, such as `MKMapItemRequest` (macOS 15) and the geocoding requests (macOS 26), return an error on older systems.
 
 > **Status:** v0.3.0 adds an executor-agnostic `async` feature (Tier-1 async API) on top of full audited coverage for the non-exempt macOS 26.2 MapKit SDK surface.
 
@@ -65,8 +65,53 @@ println!("Found {} results", response.map_items.len());
 > main queue; the main run loop must be active for those futures to resolve.
 > `MKMapSnapshotter` uses a background queue and has no such restriction.
 >
-> Multi-fire delegate surfaces (`MKLocalSearchCompleter`, `MKMapViewDelegate`)
-> are deferred to a Tier-2 Stream rollout.
+> `MKLocalSearchCompleter` updates are not exposed as a stream yet.
+> `MKMapViewDelegate` is a callback delegate; see below.
+
+## Map view delegate
+
+`MKMapView::set_delegate` connects an `MKMapViewDelegate` and returns a registration; the delegate stays connected until the registration is dropped. MapKit asks the delegate for overlay renderers, so implement `map_view_renderer_for_overlay` to draw overlays:
+
+```rust,no_run
+use mapkit::prelude::*;
+
+struct Routes;
+
+impl MKMapViewDelegate for Routes {
+    fn map_view_renderer_for_overlay(
+        &mut self,
+        _map_view: &MKMapView,
+        overlay: &MKAnyOverlay,
+    ) -> Option<Box<dyn MKOverlayRendering>> {
+        match overlay {
+            MKAnyOverlay::Polyline(polyline) => {
+                Some(Box::new(MKPolylineRenderer::new(polyline).ok()?))
+            }
+            _ => None,
+        }
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let map_view = MKMapView::new(MKScreenSize::new(320.0, 240.0))?;
+    let _delegate = map_view.set_delegate(Routes)?;
+    let route = MKPolyline::new(&[
+        MKCoordinate::new(37.3349, -122.0090),
+        MKCoordinate::new(37.3318, -122.0312),
+    ])?;
+    map_view.add_overlay(&route, MKOverlayLevel::AboveRoads)?;
+    Ok(())
+}
+```
+
+The delegate also receives region, loading, rendering, selection, drag, user-location and tracking-mode callbacks. `mapView(_:viewFor:)`, `didAdd` views and renderers, cluster annotations and selection accessories are not bridged.
+
+## Threads
+
+- `MKMapView`, the annotation views and `MKUserTrackingButton` are AppKit views and are `!Send`. Create and use them on the main thread; on any other thread their methods return an error instead of hopping to the main queue.
+- MapKit calls the map view delegate on the main thread. A callback that MapKit raises while another callback of the same delegate is still running is skipped rather than re-entering the delegate.
+- MapKit delivers `MKLocalSearch`, `MKDirections`, geocoding, Look Around, `MKMapItemRequest` and `MKLocalSearchCompleter` results on the main queue. Their synchronous methods wait for that result, so they return an error on the main thread instead of spinning its run loop. Call them from another thread while the main thread runs its run loop, or use the `async` API. A wait that times out cancels the request and returns an error.
+- `MKMapSnapshotter` delivers on a background queue and works from any thread.
 
 ## Highlights
 
@@ -77,7 +122,7 @@ println!("Found {} results", response.map_items.len());
 - `MKGeocodingRequest` and `MKReverseGeocodingRequest` on macOS 26+
 - `MKPointOfInterestFilter`, `MKLocalPointsOfInterestRequest`, the full `MKPointOfInterestCategory` convenience set, `MKAddress`, and `MKAddressFilter`
 - `MKMapItem` / `MKPlacemark` data models, launch-option constants, `MKMapItemIdentifier`, `MKMapItemRequest`, and `MKErrorCode` / `MKErrorDomain` helpers
-- `MKGeoJSONDecoder` plus the full audited `MKGeometry.h` helper surface, and headless-safe Rust models/traits for map controls, selection accessories, map-item detail / Look Around controllers, and `MKMapViewDelegate`
+- `MKGeoJSONDecoder` plus the full audited `MKGeometry.h` helper surface, `MKMapViewDelegate` connected through `MKMapView::set_delegate`, and Rust-side models (no AppKit object behind them) for map controls, selection accessories, and the map-item detail / Look Around controllers
 
 ## Examples
 
@@ -100,9 +145,9 @@ Expected success footer from the smoke example:
 ## Notes
 
 - The examples are designed to exit successfully on a headless macOS host.
-- Some UI-heavy integration tests are `#[ignore]` under `cargo test` because MapKit view/rendering objects require a dedicated main-thread process; the matching numbered examples exercise those APIs directly.
+- `tests/main_thread.rs` is a harness-free test binary that runs on the process main thread, so `cargo test` exercises the views and the map view delegate headlessly.
 - `MKUserTrackingButton` is not exposed as a standalone native macOS class in the SDK, so this crate wraps the equivalent `MKMapView.showsUserTrackingButton` / `userTrackingMode` functionality instead.
-- `COVERAGE.md` and `COVERAGE_AUDIT.md` document the 100% audited surface, the headless-safe modeling notes for UI/controller APIs, and the two exempt SDK declarations.
+- `COVERAGE.md` and `COVERAGE_AUDIT.md` document the audited surface, which UI/controller types are Rust-side models rather than AppKit objects, and the two exempt SDK declarations.
 
 ## License
 
