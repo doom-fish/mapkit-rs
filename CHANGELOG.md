@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** `MKAnnotation` and `MKOverlay` are sealed, as is the new
+  `MKOverlayRendering`. The bridge hands the pointer they return to MapKit, so
+  an implementation outside the crate could make MapKit use an arbitrary
+  pointer.
 - **Breaking:** `MKMapView`, the annotation views and `MKUserTrackingButton`
   return an error when used off the main thread instead of hopping to the main
   queue with `DispatchQueue.main.sync`, which deadlocked when the main thread

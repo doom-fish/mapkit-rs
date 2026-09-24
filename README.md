@@ -119,6 +119,23 @@ The delegate also receives region, loading, rendering, selection, drag, user-loc
 - `MKMapSnapshotter` delivers on a background queue and works from any thread.
 - Overlay renderers aren't bound to a thread: MapKit draws them on background threads, and they can be created and styled on any thread.
 
+## Sealed traits
+
+`MKAnnotation`, `MKOverlay` and `MKOverlayRendering` hand the native MapKit object behind a value to MapKit, so only this crate's types implement them:
+
+```rust,compile_fail
+use core::ffi::c_void;
+use mapkit::prelude::*;
+
+struct Fake;
+
+impl MKOverlayRendering for Fake {
+    fn as_raw_renderer(&self) -> *mut c_void {
+        core::ptr::null_mut()
+    }
+}
+```
+
 ## Highlights
 
 - `MKMapView` creation, region/map-rect conversions, interaction toggles, camera boundaries/zoom ranges, preferred configurations, generic annotations/overlays, default reuse identifiers, and user tracking mode

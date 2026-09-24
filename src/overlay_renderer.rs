@@ -9,7 +9,7 @@ use crate::geometry::MKMapRect;
 use crate::overlay::{
     MKCircle, MKMultiPolygon, MKMultiPolyline, MKOverlay, MKPolygon, MKPolyline, MKTileOverlay,
 };
-use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
+use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result, Sealed};
 
 /// Wraps `MKZoomScale`.
 pub type MKZoomScale = f64;
@@ -659,7 +659,7 @@ path_renderer_impl!(
     "MKMultiPolygonRenderer"
 );
 
-pub trait MKOverlayRendering {
+pub trait MKOverlayRendering: Sealed {
     #[doc(hidden)]
     fn as_raw_renderer(&self) -> *mut c_void;
 }
@@ -667,6 +667,8 @@ pub trait MKOverlayRendering {
 macro_rules! overlay_rendering_impl {
     ($($name:ident),+ $(,)?) => {
         $(
+            impl Sealed for $name {}
+
             impl MKOverlayRendering for $name {
                 fn as_raw_renderer(&self) -> *mut c_void {
                     self.raw.as_ptr()

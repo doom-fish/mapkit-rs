@@ -7,7 +7,7 @@ use crate::annotation_view::MKAnnotation;
 use crate::error::MapKitError;
 use crate::ffi;
 use crate::geometry::{MKCoordinate, MKMapRect, MKScreenSize};
-use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
+use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result, Sealed};
 
 /// Wraps `MKOverlayLevel`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -179,6 +179,8 @@ impl MKCircle {
     }
 }
 
+impl Sealed for MKCircle {}
+
 impl MKAnnotation for MKCircle {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Self::coordinate(self)
@@ -278,6 +280,8 @@ impl MKPolyline {
         self.raw.as_ptr()
     }
 }
+
+impl Sealed for MKPolyline {}
 
 impl MKAnnotation for MKPolyline {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
@@ -390,6 +394,8 @@ impl MKGeodesicPolyline {
         self.raw.as_ptr()
     }
 }
+
+impl Sealed for MKGeodesicPolyline {}
 
 impl MKAnnotation for MKGeodesicPolyline {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
@@ -504,6 +510,8 @@ impl MKPolygon {
         self.raw.as_ptr()
     }
 }
+
+impl Sealed for MKPolygon {}
 
 impl MKAnnotation for MKPolygon {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
@@ -717,6 +725,8 @@ impl MKTileOverlay {
     }
 }
 
+impl Sealed for MKTileOverlay {}
+
 impl MKAnnotation for MKTileOverlay {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Self::coordinate(self)
@@ -820,6 +830,8 @@ impl MKMultiPolyline {
         self.raw.as_ptr()
     }
 }
+
+impl Sealed for MKMultiPolyline {}
 
 impl MKAnnotation for MKMultiPolyline {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
@@ -926,6 +938,8 @@ impl MKMultiPolygon {
         self.raw.as_ptr()
     }
 }
+
+impl Sealed for MKMultiPolygon {}
 
 impl MKAnnotation for MKMultiPolygon {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {

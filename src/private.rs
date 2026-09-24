@@ -10,6 +10,8 @@ use serde::Serialize;
 use crate::error::MapKitError;
 use crate::ffi;
 
+pub trait Sealed {}
+
 /// Wraps `cstring_from_str`.
 pub fn cstring_from_str(value: &str, context: &str) -> Result<CString, MapKitError> {
     CString::new(value).map_err(|error| {

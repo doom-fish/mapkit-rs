@@ -9,16 +9,18 @@ use crate::error::MapKitError;
 use crate::ffi;
 use crate::geometry::{MKCoordinate, MKScreenPoint};
 use crate::map_view::MKFeatureVisibility;
-use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
+use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result, Sealed};
 
 /// Wraps `MKAnnotation`.
-pub trait MKAnnotation {
+pub trait MKAnnotation: Sealed {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError>;
     fn title(&self) -> Result<Option<String>, MapKitError>;
     fn subtitle(&self) -> Result<Option<String>, MapKitError>;
     #[doc(hidden)]
     fn as_raw_annotation(&self) -> *mut c_void;
 }
+
+impl Sealed for MKPointAnnotation {}
 
 impl MKAnnotation for MKPointAnnotation {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
@@ -37,6 +39,8 @@ impl MKAnnotation for MKPointAnnotation {
         self.as_raw()
     }
 }
+
+impl Sealed for MKClusterAnnotation {}
 
 impl MKAnnotation for MKClusterAnnotation {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {

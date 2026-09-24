@@ -8,7 +8,9 @@ use crate::error::MapKitError;
 use crate::ffi;
 use crate::geometry::MKCoordinate;
 use crate::map_item::MKMapItem;
-use crate::private::{cstring_from_str, json_cstring, owned_handle, parse_json_ptr, unit_result};
+use crate::private::{
+    cstring_from_str, json_cstring, owned_handle, parse_json_ptr, unit_result, Sealed,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -207,6 +209,8 @@ impl MKMapItemAnnotation {
     }
 }
 
+impl Sealed for MKMapItemAnnotation {}
+
 impl MKAnnotation for MKMapItemAnnotation {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
         Self::coordinate(self)
@@ -291,6 +295,8 @@ impl MKUserLocation {
         self.raw.as_ptr()
     }
 }
+
+impl Sealed for MKUserLocation {}
 
 impl MKAnnotation for MKUserLocation {
     fn coordinate(&self) -> Result<MKCoordinate, MapKitError> {
