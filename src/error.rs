@@ -80,7 +80,11 @@ pub enum MapKitError {
     InvalidArgument(String),
     Framework(NSErrorInfo),
     OperationFailed(String),
+    MainThreadRequired(String),
 }
+
+const BRIDGE_ERROR_DOMAIN: &str = "mapkit-rs";
+const MAIN_THREAD_REQUIRED_CODE: i64 = -2;
 
 impl fmt::Display for MapKitError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -88,6 +92,7 @@ impl fmt::Display for MapKitError {
             Self::InvalidArgument(message) => write!(f, "invalid argument: {message}"),
             Self::Framework(error) => write!(f, "MapKit.framework error: {error}"),
             Self::OperationFailed(message) => write!(f, "mapkit operation failed: {message}"),
+            Self::MainThreadRequired(message) => write!(f, "main thread required: {message}"),
         }
     }
 }
@@ -99,7 +104,9 @@ impl MapKitError {
     pub fn mapkit_error_code(&self) -> Option<MKErrorCode> {
         match self {
             Self::Framework(error) => error.mapkit_error_code(),
-            Self::InvalidArgument(_) | Self::OperationFailed(_) => None,
+            Self::InvalidArgument(_) | Self::OperationFailed(_) | Self::MainThreadRequired(_) => {
+                None
+            }
         }
     }
 
@@ -118,11 +125,18 @@ impl MapKitError {
 
         let message = CStr::from_ptr(error_ptr).to_string_lossy().into_owned();
         ffi::mk_string_free(error_ptr);
+        Self::from_bridge_message(message)
+    }
 
-        if let Ok(payload) = serde_json::from_str::<NSErrorInfo>(&message) {
-            Self::Framework(payload)
-        } else {
-            Self::OperationFailed(message)
+    fn from_bridge_message(message: String) -> Self {
+        match serde_json::from_str::<NSErrorInfo>(&message) {
+            Ok(info)
+                if info.domain == BRIDGE_ERROR_DOMAIN && info.code == MAIN_THREAD_REQUIRED_CODE =>
+            {
+                Self::MainThreadRequired(info.message)
+            }
+            Ok(info) => Self::Framework(info),
+            Err(_) => Self::OperationFailed(message),
         }
     }
 }
@@ -206,6 +220,37 @@ mod tests {
             MapKitError::OperationFailed("bridge failed".to_owned()).to_string(),
             "mapkit operation failed: bridge failed"
         );
+        assert_eq!(
+            MapKitError::MainThreadRequired("off main".to_owned()).to_string(),
+            "main thread required: off main"
+        );
+    }
+
+    #[test]
+    fn bridge_main_thread_errors_map_to_main_thread_required() {
+        let message = "MKLocalSearchCompleter must be created and used on the main thread";
+        assert_eq!(
+            MapKitError::from_bridge_message(format!(
+                r#"{{"domain":"mapkit-rs","code":-2,"message":"{message}"}}"#
+            )),
+            MapKitError::MainThreadRequired(message.to_owned())
+        );
+        assert!(matches!(
+            MapKitError::from_bridge_message(
+                r#"{"domain":"mapkit-rs","code":-1,"message":"other"}"#.to_owned()
+            ),
+            MapKitError::Framework(_)
+        ));
+        assert!(matches!(
+            MapKitError::from_bridge_message(
+                r#"{"domain":"NSCocoaErrorDomain","code":-2,"message":"foreign"}"#.to_owned()
+            ),
+            MapKitError::Framework(_)
+        ));
+        assert_eq!(
+            MapKitError::from_bridge_message("plain text".to_owned()),
+            MapKitError::OperationFailed("plain text".to_owned())
+        );
     }
 
     #[test]
@@ -223,6 +268,10 @@ mod tests {
         );
         assert_eq!(
             MapKitError::OperationFailed("bridge failed".to_owned()).mapkit_error_code(),
+            None
+        );
+        assert_eq!(
+            MapKitError::MainThreadRequired("off main".to_owned()).mapkit_error_code(),
             None
         );
     }

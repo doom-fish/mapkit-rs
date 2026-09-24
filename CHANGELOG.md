@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the new sRGB `MKColor`; caps and joins are `MKLineCap` and `MKLineJoin`.
 - `MKGradientPolylineRenderer::set_colors`, `colors` and `locations`.
 - `MKTileOverlayRenderer::set_alpha`.
+- `MapKitError::MainThreadRequired`, returned by main-thread-only objects used
+  on another thread.
 
 ### Fixed
 
@@ -70,9 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `set_line_width`, `set_line_dash_phase`, `set_line_dash_pattern`,
   `set_stroke_start` and `set_stroke_end` passed such values to MapKit before.
 - **Breaking:** `MKMapView`, the annotation views and `MKUserTrackingButton`
-  return an error when used off the main thread instead of hopping to the main
-  queue with `DispatchQueue.main.sync`, which deadlocked when the main thread
-  was waiting.
+  return `MapKitError::MainThreadRequired` when used off the main thread
+  instead of hopping to the main queue with `DispatchQueue.main.sync`, which
+  deadlocked when the main thread was waiting.
 - **Breaking:** synchronous search, directions, geocoding, Look Around,
   map-item and completer calls return an error on the main thread.
 - **Breaking:** `MKMapViewDelegate` now requires `Send + 'static`.

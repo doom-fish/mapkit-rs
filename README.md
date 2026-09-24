@@ -113,7 +113,7 @@ The delegate also receives region, loading, rendering, selection, drag, user-loc
 
 ## Threads
 
-- `MKMapView`, the annotation views and `MKUserTrackingButton` are AppKit views and are `!Send`. Create and use them on the main thread; on any other thread their methods return an error instead of hopping to the main queue.
+- `MKMapView`, the annotation views and `MKUserTrackingButton` are AppKit views and are `!Send`. Create and use them on the main thread; on any other thread their methods return `MapKitError::MainThreadRequired` instead of hopping to the main queue.
 - MapKit calls the map view delegate on the main thread. A callback that MapKit raises while another callback of the same delegate is still running is skipped rather than re-entering the delegate.
 - MapKit delivers `MKLocalSearch`, `MKDirections`, geocoding, Look Around, `MKMapItemRequest` and `MKLocalSearchCompleter` results on the main queue. Their synchronous methods wait for that result, so they return an error on the main thread instead of spinning its run loop. Call them from another thread while the main thread runs its run loop, or use the `async` API. A wait that times out cancels the request and returns an error.
 - `MKMapSnapshotter` delivers on a background queue and works from any thread.

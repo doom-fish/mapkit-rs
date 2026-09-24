@@ -154,6 +154,10 @@ fn views_refuse_other_threads() {
     .unwrap();
     for result in results {
         let error = result.expect_err("views must refuse to run off the main thread");
+        assert!(
+            matches!(error, MapKitError::MainThreadRequired(_)),
+            "{error:?}"
+        );
         assert!(error.to_string().contains("main thread"), "{error}");
     }
 }

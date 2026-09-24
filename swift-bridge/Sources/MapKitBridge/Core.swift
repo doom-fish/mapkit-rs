@@ -149,9 +149,15 @@ func mkrDeadline(seconds: TimeInterval) -> DispatchTime {
     return DispatchTime.now() + .milliseconds(Int(clamped * 1000))
 }
 
-func mkrOnMainThread<T>(_ operation: () throws -> T) throws -> T {
+let mkrMainThreadRequiredCode = -2
+
+func mkrOnMainThread<T>(_ subject: String = "AppKit views", _ operation: () throws -> T) throws -> T {
     guard Thread.isMainThread else {
-        throw mkrBridgeError("AppKit views must be created and used on the main thread")
+        throw NSError(
+            domain: "mapkit-rs",
+            code: mkrMainThreadRequiredCode,
+            userInfo: [NSLocalizedDescriptionKey: "\(subject) must be created and used on the main thread"]
+        )
     }
     return try operation()
 }
