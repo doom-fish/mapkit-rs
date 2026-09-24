@@ -162,9 +162,10 @@ pub use overlay::{
 };
 /// Re-exports MapKit wrappers such as `mk_road_width_at_zoom_scale`, `MKCircleRenderer`, and `MKGradientPolylineRenderer`.
 pub use overlay_renderer::{
-    mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
-    MKMultiPolygonRenderer, MKMultiPolylineRenderer, MKOverlayPathRenderer, MKOverlayRenderer,
-    MKOverlayRendering, MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer, MKZoomScale,
+    mk_road_width_at_zoom_scale, MKCircleRenderer, MKColor, MKGradientPolylineRenderer,
+    MKLineCap, MKLineJoin, MKMultiPolygonRenderer, MKMultiPolylineRenderer, MKOverlayPathRenderer,
+    MKOverlayRenderer, MKOverlayRendering, MKPolygonRenderer, MKPolylineRenderer,
+    MKTileOverlayRenderer, MKZoomScale,
 };
 /// Re-exports MapKit wrappers such as `MKLocalPointsOfInterestRequest`, `MKPointOfInterestCategory`, and `MKPointOfInterestFilter`.
 pub use point_of_interest::{
@@ -271,10 +272,10 @@ pub mod prelude {
     };
     /// Re-exports MapKit wrappers such as `mk_road_width_at_zoom_scale`, `MKCircleRenderer`, and `MKGradientPolylineRenderer`.
     pub use crate::overlay_renderer::{
-        mk_road_width_at_zoom_scale, MKCircleRenderer, MKGradientPolylineRenderer,
-        MKMultiPolygonRenderer, MKMultiPolylineRenderer, MKOverlayPathRenderer, MKOverlayRenderer,
-        MKOverlayRendering, MKPolygonRenderer, MKPolylineRenderer, MKTileOverlayRenderer,
-        MKZoomScale,
+        mk_road_width_at_zoom_scale, MKCircleRenderer, MKColor, MKGradientPolylineRenderer,
+        MKLineCap, MKLineJoin, MKMultiPolygonRenderer, MKMultiPolylineRenderer,
+        MKOverlayPathRenderer, MKOverlayRenderer, MKOverlayRendering, MKPolygonRenderer,
+        MKPolylineRenderer, MKTileOverlayRenderer, MKZoomScale,
     };
     /// Re-exports MapKit wrappers such as `MKLocalPointsOfInterestRequest`, `MKPointOfInterestCategory`, and `MKPointOfInterestFilter`.
     pub use crate::point_of_interest::{

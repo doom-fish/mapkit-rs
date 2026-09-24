@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MKOverlayRendering`, implemented by every renderer type.
 - `tests/main_thread.rs`, a harness-free test binary that runs the view round
   trips and the delegate on the process main thread.
+- Style setters and getters on every path renderer (`MKOverlayPathRenderer`,
+  `MKCircleRenderer`, `MKPolylineRenderer`, `MKGradientPolylineRenderer`,
+  `MKPolygonRenderer`, `MKMultiPolylineRenderer` and `MKMultiPolygonRenderer`):
+  stroke color, line width, line cap, line join, miter limit, dash phase and
+  pattern, rasterization, content scale factor and `set_alpha`, plus fill color
+  on the circle, polygon, multi-polygon and generic path renderers. Colors are
+  the new sRGB `MKColor`; caps and joins are `MKLineCap` and `MKLineJoin`.
+- `MKGradientPolylineRenderer::set_colors`, `colors` and `locations`.
+- `MKTileOverlayRenderer::set_alpha`.
 
 ### Fixed
 
@@ -54,6 +63,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MKOverlayRendering`. The bridge hands the pointer they return to MapKit, so
   an implementation outside the crate could make MapKit use an arbitrary
   pointer.
+- **Breaking:** renderer setters return `MapKitError::InvalidArgument` for a
+  line width, miter limit, dash phase or dash length that is negative or not
+  finite, for an all-zero dash pattern, and for an alpha, stroke start, stroke
+  end, gradient location or color component outside 0 to 1. `set_alpha`,
+  `set_line_width`, `set_line_dash_phase`, `set_line_dash_pattern`,
+  `set_stroke_start` and `set_stroke_end` passed such values to MapKit before.
 - **Breaking:** `MKMapView`, the annotation views and `MKUserTrackingButton`
   return an error when used off the main thread instead of hopping to the main
   queue with `DispatchQueue.main.sync`, which deadlocked when the main thread

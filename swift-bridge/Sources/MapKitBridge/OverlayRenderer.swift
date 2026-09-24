@@ -10,16 +10,47 @@ struct MKROverlayRendererOptionsPayload: Codable {
     var alpha: Double?
 }
 
+struct MKRColorPayload: Codable {
+    var red: Double
+    var green: Double
+    var blue: Double
+    var alpha: Double
+}
+
+enum MKRLineCapPayload: String, Codable {
+    case butt
+    case round
+    case square
+}
+
+enum MKRLineJoinPayload: String, Codable {
+    case miter
+    case round
+    case bevel
+}
+
 struct MKROverlayPathRendererStatePayload: Codable {
     var base: MKROverlayRendererStatePayload
+    var strokeColor: MKRColorPayload?
+    var fillColor: MKRColorPayload?
     var lineWidth: Double
+    var lineCap: MKRLineCapPayload
+    var lineJoin: MKRLineJoinPayload
+    var miterLimit: Double
     var lineDashPhase: Double
     var lineDashPattern: [Double]?
     var shouldRasterize: Bool
 }
 
 struct MKROverlayPathRendererOptionsPayload: Codable {
+    var strokeColorPresent: Bool
+    var strokeColor: MKRColorPayload?
+    var fillColorPresent: Bool
+    var fillColor: MKRColorPayload?
     var lineWidth: Double?
+    var lineCap: MKRLineCapPayload?
+    var lineJoin: MKRLineJoinPayload?
+    var miterLimit: Double?
     var lineDashPhase: Double?
     var lineDashPatternPresent: Bool
     var lineDashPattern: [Double]?
@@ -27,7 +58,6 @@ struct MKROverlayPathRendererOptionsPayload: Codable {
 }
 
 struct MKRStrokeRendererStatePayload: Codable {
-    var base: MKROverlayPathRendererStatePayload
     var strokeStart: Double
     var strokeEnd: Double
 }
@@ -35,6 +65,11 @@ struct MKRStrokeRendererStatePayload: Codable {
 struct MKRStrokeRendererOptionsPayload: Codable {
     var strokeStart: Double?
     var strokeEnd: Double?
+}
+
+struct MKRGradientPolylineColorsPayload: Codable {
+    var colors: [MKRColorPayload]
+    var locations: [Double]
 }
 
 struct MKRMapRectZoomScalePayload: Codable {
@@ -49,27 +84,72 @@ private func mkrEncodeOverlayRendererState(_ renderer: MKOverlayRenderer) -> MKR
     )
 }
 
-private func mkrEncodeOverlayPathRendererState(
-    _ renderer: MKOverlayPathRenderer
-) -> MKROverlayPathRendererStatePayload {
-    MKROverlayPathRendererStatePayload(
-        base: mkrEncodeOverlayRendererState(renderer),
-        lineWidth: renderer.lineWidth,
-        lineDashPhase: renderer.lineDashPhase,
-        lineDashPattern: renderer.lineDashPattern?.map(\.doubleValue),
-        shouldRasterize: renderer.shouldRasterize
+private func mkrEncodeColor(_ color: NSColor) throws -> MKRColorPayload {
+    guard let srgb = color.usingColorSpace(.sRGB) else {
+        throw mkrBridgeError("MapKit returned a color that has no sRGB representation")
+    }
+    return MKRColorPayload(
+        red: srgb.redComponent,
+        green: srgb.greenComponent,
+        blue: srgb.blueComponent,
+        alpha: srgb.alphaComponent
     )
 }
 
-private func mkrEncodeStrokeRendererState<T: MKOverlayPathRenderer>(
-    _ renderer: T,
-    strokeStart: CGFloat,
-    strokeEnd: CGFloat
-) -> MKRStrokeRendererStatePayload {
-    MKRStrokeRendererStatePayload(
-        base: mkrEncodeOverlayPathRendererState(renderer),
-        strokeStart: strokeStart,
-        strokeEnd: strokeEnd
+private func mkrColor(from payload: MKRColorPayload) -> NSColor {
+    NSColor(srgbRed: payload.red, green: payload.green, blue: payload.blue, alpha: payload.alpha)
+}
+
+private func mkrEncodeLineCap(_ lineCap: CGLineCap) throws -> MKRLineCapPayload {
+    switch lineCap {
+    case .butt: return .butt
+    case .round: return .round
+    case .square: return .square
+    @unknown default:
+        throw mkrBridgeError("MapKit returned unknown line cap \(lineCap.rawValue)")
+    }
+}
+
+private func mkrLineCap(from payload: MKRLineCapPayload) -> CGLineCap {
+    switch payload {
+    case .butt: return .butt
+    case .round: return .round
+    case .square: return .square
+    }
+}
+
+private func mkrEncodeLineJoin(_ lineJoin: CGLineJoin) throws -> MKRLineJoinPayload {
+    switch lineJoin {
+    case .miter: return .miter
+    case .round: return .round
+    case .bevel: return .bevel
+    @unknown default:
+        throw mkrBridgeError("MapKit returned unknown line join \(lineJoin.rawValue)")
+    }
+}
+
+private func mkrLineJoin(from payload: MKRLineJoinPayload) -> CGLineJoin {
+    switch payload {
+    case .miter: return .miter
+    case .round: return .round
+    case .bevel: return .bevel
+    }
+}
+
+private func mkrEncodeOverlayPathRendererState(
+    _ renderer: MKOverlayPathRenderer
+) throws -> MKROverlayPathRendererStatePayload {
+    MKROverlayPathRendererStatePayload(
+        base: mkrEncodeOverlayRendererState(renderer),
+        strokeColor: try renderer.strokeColor.map(mkrEncodeColor),
+        fillColor: try renderer.fillColor.map(mkrEncodeColor),
+        lineWidth: renderer.lineWidth,
+        lineCap: try mkrEncodeLineCap(renderer.lineCap),
+        lineJoin: try mkrEncodeLineJoin(renderer.lineJoin),
+        miterLimit: renderer.miterLimit,
+        lineDashPhase: renderer.lineDashPhase,
+        lineDashPattern: renderer.lineDashPattern?.map(\.doubleValue),
+        shouldRasterize: renderer.shouldRasterize
     )
 }
 
@@ -251,7 +331,7 @@ public func mk_overlay_path_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayPathRenderer.self)
-        let payload = mkrEncodeOverlayPathRendererState(bridge)
+        let payload = try mkrEncodeOverlayPathRendererState(bridge)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -273,8 +353,23 @@ public func mk_overlay_path_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayPathRenderer.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKROverlayPathRendererOptionsPayload.self)
+        if payload.strokeColorPresent {
+            bridge.strokeColor = payload.strokeColor.map(mkrColor(from:))
+        }
+        if payload.fillColorPresent {
+            bridge.fillColor = payload.fillColor.map(mkrColor(from:))
+        }
         if let lineWidth = payload.lineWidth {
             bridge.lineWidth = lineWidth
+        }
+        if let lineCap = payload.lineCap {
+            bridge.lineCap = mkrLineCap(from: lineCap)
+        }
+        if let lineJoin = payload.lineJoin {
+            bridge.lineJoin = mkrLineJoin(from: lineJoin)
+        }
+        if let miterLimit = payload.miterLimit {
+            bridge.miterLimit = miterLimit
         }
         if let lineDashPhase = payload.lineDashPhase {
             bridge.lineDashPhase = lineDashPhase
@@ -343,7 +438,7 @@ public func mk_circle_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKCircleRenderer.self)
-        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
+        let payload = MKRStrokeRendererStatePayload(strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -409,7 +504,7 @@ public func mk_polyline_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKPolylineRenderer.self)
-        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
+        let payload = MKRStrokeRendererStatePayload(strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -475,7 +570,7 @@ public func mk_gradient_polyline_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKGradientPolylineRenderer.self)
-        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
+        let payload = MKRStrokeRendererStatePayload(strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -514,6 +609,52 @@ public func mk_gradient_polyline_renderer_release(_ renderer: UnsafeMutableRawPo
     mkrRelease(renderer)
 }
 
+@_cdecl("mk_gradient_polyline_renderer_colors_json")
+public func mk_gradient_polyline_renderer_colors_json(
+    _ renderer: UnsafeMutableRawPointer?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let renderer else {
+        mkrSetMessageError(outError, message: "missing MKGradientPolylineRenderer")
+        return nil
+    }
+
+    do {
+        let bridge = mkrBorrow(renderer, as: MKGradientPolylineRenderer.self)
+        let payload = MKRGradientPolylineColorsPayload(
+            colors: try bridge.colors.map(mkrEncodeColor),
+            locations: bridge.locations.map { Double($0) }
+        )
+        return mkrCString(try mkrEncodeJSON(payload))
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
+}
+
+@_cdecl("mk_gradient_polyline_renderer_set_colors_json")
+public func mk_gradient_polyline_renderer_set_colors_json(
+    _ renderer: UnsafeMutableRawPointer?,
+    _ payloadJSON: UnsafePointer<CChar>?,
+    _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) {
+    guard let renderer else {
+        mkrSetMessageError(outError, message: "missing MKGradientPolylineRenderer")
+        return
+    }
+
+    do {
+        let bridge = mkrBorrow(renderer, as: MKGradientPolylineRenderer.self)
+        let payload = try mkrDecodeJSON(payloadJSON, as: MKRGradientPolylineColorsPayload.self)
+        guard payload.colors.count == payload.locations.count else {
+            throw mkrBridgeError("MKGradientPolylineRenderer needs exactly one location per color")
+        }
+        bridge.setColors(payload.colors.map(mkrColor(from:)), locations: payload.locations.map { CGFloat($0) })
+    } catch {
+        mkrSetError(outError, error)
+    }
+}
+
 @_cdecl("mk_polygon_renderer_new")
 public func mk_polygon_renderer_new(
     _ polygon: UnsafeMutableRawPointer?,
@@ -541,7 +682,7 @@ public func mk_polygon_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKPolygonRenderer.self)
-        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
+        let payload = MKRStrokeRendererStatePayload(strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)

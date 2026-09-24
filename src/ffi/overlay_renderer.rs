@@ -88,6 +88,15 @@ extern "C" {
         out_error: *mut *mut c_char,
     );
     pub fn mk_gradient_polyline_renderer_release(renderer: *mut c_void);
+    pub fn mk_gradient_polyline_renderer_colors_json(
+        renderer: *mut c_void,
+        out_error: *mut *mut c_char,
+    ) -> *mut c_char;
+    pub fn mk_gradient_polyline_renderer_set_colors_json(
+        renderer: *mut c_void,
+        payload_json: *const c_char,
+        out_error: *mut *mut c_char,
+    );
     pub fn mk_polygon_renderer_new(
         polygon: *mut c_void,
         out_error: *mut *mut c_char,

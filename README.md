@@ -139,7 +139,7 @@ impl MKOverlayRendering for Fake {
 ## Highlights
 
 - `MKMapView` creation, region/map-rect conversions, interaction toggles, camera boundaries/zoom ranges, preferred configurations, generic annotations/overlays, default reuse identifiers, and user tracking mode
-- `MKPointAnnotation`, `MKMapItemAnnotation`, `MKUserLocation`, `MKAnnotationView`, `MKMarkerAnnotationView`, `MKPinAnnotationView`, `MKUserLocationView`, `MKClusterAnnotation`, `MKCircle`, `MKPolyline`, `MKMultiPolyline`, `MKPolygon`, `MKMultiPolygon`, `MKTileOverlay`, and overlay renderers
+- `MKPointAnnotation`, `MKMapItemAnnotation`, `MKUserLocation`, `MKAnnotationView`, `MKMarkerAnnotationView`, `MKPinAnnotationView`, `MKUserLocationView`, `MKClusterAnnotation`, `MKCircle`, `MKPolyline`, `MKMultiPolyline`, `MKPolygon`, `MKMultiPolygon`, `MKTileOverlay`, and overlay renderers with stroke and fill colors (`MKColor`, sRGB), line width, cap, join, miter limit, dash pattern, alpha, stroke range and gradient colors, all validated before they reach MapKit
 - `MKLocalSearch`, `MKLocalSearchCompleter`, and `MKDirections` request/response bridges for search and routing services
 - `MKMapSnapshotter` and `MKLookAroundSnapshotter` wrappers for headless image generation
 - `MKGeocodingRequest` and `MKReverseGeocodingRequest` on macOS 26+

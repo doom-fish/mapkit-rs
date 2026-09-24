@@ -14,6 +14,86 @@ use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result, Se
 /// Wraps `MKZoomScale`.
 pub type MKZoomScale = f64;
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct MKColor {
+    pub red: f64,
+    pub green: f64,
+    pub blue: f64,
+    pub alpha: f64,
+}
+
+impl MKColor {
+    pub const fn new(red: f64, green: f64, blue: f64, alpha: f64) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha,
+        }
+    }
+
+    fn validated(self, name: &str) -> Result<Self, MapKitError> {
+        for component in [self.red, self.green, self.blue, self.alpha] {
+            unit_interval(component, name)?;
+        }
+        Ok(self)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MKLineCap {
+    Butt,
+    Round,
+    Square,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MKLineJoin {
+    Miter,
+    Round,
+    Bevel,
+}
+
+fn unit_interval(value: f64, name: &str) -> Result<f64, MapKitError> {
+    if value.is_finite() && (0.0..=1.0).contains(&value) {
+        Ok(value)
+    } else {
+        Err(MapKitError::InvalidArgument(format!(
+            "{name} must be between 0 and 1, got {value}"
+        )))
+    }
+}
+
+fn non_negative(value: f64, name: &str) -> Result<f64, MapKitError> {
+    if value.is_finite() && value >= 0.0 {
+        Ok(value)
+    } else {
+        Err(MapKitError::InvalidArgument(format!(
+            "{name} must be finite and non-negative, got {value}"
+        )))
+    }
+}
+
+fn validated_dash_pattern(pattern: Option<Vec<f64>>) -> Result<Option<Vec<f64>>, MapKitError> {
+    if let Some(lengths) = &pattern {
+        for &length in lengths {
+            non_negative(length, "line dash pattern length")?;
+        }
+        if !lengths.is_empty() && lengths.iter().all(|&length| length <= 0.0) {
+            return Err(MapKitError::InvalidArgument(
+                "line dash pattern needs at least one non-zero length".to_owned(),
+            ));
+        }
+    }
+    Ok(pattern)
+}
+
+fn validated_color(color: Option<MKColor>, name: &str) -> Result<Option<MKColor>, MapKitError> {
+    color.map(|color| color.validated(name)).transpose()
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct MKOverlayRendererState {
@@ -31,7 +111,12 @@ struct MKOverlayRendererOptions {
 #[serde(rename_all = "camelCase")]
 struct MKOverlayPathRendererState {
     base: MKOverlayRendererState,
+    stroke_color: Option<MKColor>,
+    fill_color: Option<MKColor>,
     line_width: f64,
+    line_cap: MKLineCap,
+    line_join: MKLineJoin,
+    miter_limit: f64,
     line_dash_phase: f64,
     line_dash_pattern: Option<Vec<f64>>,
     should_rasterize: bool,
@@ -40,7 +125,14 @@ struct MKOverlayPathRendererState {
 #[derive(Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct MKOverlayPathRendererOptions {
+    stroke_color_present: bool,
+    stroke_color: Option<MKColor>,
+    fill_color_present: bool,
+    fill_color: Option<MKColor>,
     line_width: Option<f64>,
+    line_cap: Option<MKLineCap>,
+    line_join: Option<MKLineJoin>,
+    miter_limit: Option<f64>,
     line_dash_phase: Option<f64>,
     line_dash_pattern_present: bool,
     line_dash_pattern: Option<Vec<f64>>,
@@ -50,7 +142,6 @@ struct MKOverlayPathRendererOptions {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct MKStrokeRendererState {
-    base: MKOverlayPathRendererState,
     stroke_start: f64,
     stroke_end: f64,
 }
@@ -62,11 +153,59 @@ struct MKStrokeRendererOptions {
     stroke_end: Option<f64>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct MKGradientPolylineColors {
+    colors: Vec<MKColor>,
+    locations: Vec<f64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct MKMapRectZoomScalePayload {
     map_rect: MKMapRect,
     zoom_scale: MKZoomScale,
+}
+
+fn set_renderer_alpha(raw: NonNull<c_void>, alpha: f64, label: &str) -> Result<(), MapKitError> {
+    let options = MKOverlayRendererOptions {
+        alpha: Some(unit_interval(alpha, "alpha")?),
+    };
+    let options = json_cstring(&options, &format!("{label} options"))?;
+    let mut error = ptr::null_mut();
+    unsafe {
+        ffi::mk_overlay_renderer_apply_options_json(raw.as_ptr(), options.as_ptr(), &raw mut error);
+    };
+    unsafe { unit_result(error, &format!("failed to update {label}")) }
+}
+
+fn path_state(
+    raw: NonNull<c_void>,
+    label: &str,
+) -> Result<MKOverlayPathRendererState, MapKitError> {
+    let mut error = ptr::null_mut();
+    let payload = unsafe { ffi::mk_overlay_path_renderer_state_json(raw.as_ptr(), &raw mut error) };
+    if payload.is_null() {
+        Err(unsafe { MapKitError::from_error_ptr(error, &format!("failed to read {label} state")) })
+    } else {
+        unsafe { parse_json_ptr(payload, &format!("{label} state")) }
+    }
+}
+
+fn apply_path_options(
+    raw: NonNull<c_void>,
+    options: &MKOverlayPathRendererOptions,
+    label: &str,
+) -> Result<(), MapKitError> {
+    let options = json_cstring(options, &format!("{label} options"))?;
+    let mut error = ptr::null_mut();
+    unsafe {
+        ffi::mk_overlay_path_renderer_apply_options_json(
+            raw.as_ptr(),
+            options.as_ptr(),
+            &raw mut error,
+        );
+    };
+    unsafe { unit_result(error, &format!("failed to update {label}")) }
 }
 
 /// Wraps `MKOverlayRenderer`.
@@ -97,19 +236,6 @@ impl MKOverlayRenderer {
         }
     }
 
-    fn apply_options(&self, options: &MKOverlayRendererOptions) -> Result<(), MapKitError> {
-        let options = json_cstring(options, "MKOverlayRenderer options")?;
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_overlay_renderer_apply_options_json(
-                self.raw.as_ptr(),
-                options.as_ptr(),
-                &raw mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to update MKOverlayRenderer") }
-    }
-
     /// Wraps `MKOverlayRenderer.alpha`.
     pub fn alpha(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.alpha)
@@ -117,7 +243,7 @@ impl MKOverlayRenderer {
 
     /// Wraps `MKOverlayRenderer.alpha`.
     pub fn set_alpha(&self, alpha: f64) -> Result<(), MapKitError> {
-        self.apply_options(&MKOverlayRendererOptions { alpha: Some(alpha) })
+        set_renderer_alpha(self.raw, alpha, "MKOverlayRenderer")
     }
 
     /// Wraps `MKOverlayRenderer.contentScaleFactor`.
@@ -212,6 +338,177 @@ impl Drop for MKOverlayRenderer {
     }
 }
 
+macro_rules! path_style_methods {
+    ($label:literal) => {
+        /// Wraps `MKOverlayPathRenderer.alpha`.
+        pub fn alpha(&self) -> Result<f64, MapKitError> {
+            Ok(path_state(self.raw, $label)?.base.alpha)
+        }
+
+        pub fn set_alpha(&self, alpha: f64) -> Result<(), MapKitError> {
+            set_renderer_alpha(self.raw, alpha, $label)
+        }
+
+        /// Wraps `MKOverlayPathRenderer.contentScaleFactor`.
+        pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
+            Ok(path_state(self.raw, $label)?.base.content_scale_factor)
+        }
+
+        pub fn stroke_color(&self) -> Result<Option<MKColor>, MapKitError> {
+            Ok(path_state(self.raw, $label)?.stroke_color)
+        }
+
+        pub fn set_stroke_color(&self, stroke_color: Option<MKColor>) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    stroke_color_present: true,
+                    stroke_color: validated_color(stroke_color, "stroke color")?,
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        /// Wraps `MKOverlayPathRenderer.lineWidth`.
+        pub fn line_width(&self) -> Result<f64, MapKitError> {
+            Ok(path_state(self.raw, $label)?.line_width)
+        }
+
+        /// Wraps `MKOverlayPathRenderer.lineWidth`.
+        pub fn set_line_width(&self, line_width: f64) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    line_width: Some(non_negative(line_width, "line width")?),
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        pub fn line_cap(&self) -> Result<MKLineCap, MapKitError> {
+            Ok(path_state(self.raw, $label)?.line_cap)
+        }
+
+        pub fn set_line_cap(&self, line_cap: MKLineCap) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    line_cap: Some(line_cap),
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        pub fn line_join(&self) -> Result<MKLineJoin, MapKitError> {
+            Ok(path_state(self.raw, $label)?.line_join)
+        }
+
+        pub fn set_line_join(&self, line_join: MKLineJoin) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    line_join: Some(line_join),
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        pub fn miter_limit(&self) -> Result<f64, MapKitError> {
+            Ok(path_state(self.raw, $label)?.miter_limit)
+        }
+
+        pub fn set_miter_limit(&self, miter_limit: f64) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    miter_limit: Some(non_negative(miter_limit, "miter limit")?),
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        /// Wraps `MKOverlayPathRenderer.lineDashPhase`.
+        pub fn line_dash_phase(&self) -> Result<f64, MapKitError> {
+            Ok(path_state(self.raw, $label)?.line_dash_phase)
+        }
+
+        /// Wraps `MKOverlayPathRenderer.lineDashPhase`.
+        pub fn set_line_dash_phase(&self, line_dash_phase: f64) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    line_dash_phase: Some(non_negative(line_dash_phase, "line dash phase")?),
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        /// Wraps `MKOverlayPathRenderer.lineDashPattern`.
+        pub fn line_dash_pattern(&self) -> Result<Option<Vec<f64>>, MapKitError> {
+            Ok(path_state(self.raw, $label)?.line_dash_pattern)
+        }
+
+        /// Wraps `MKOverlayPathRenderer.lineDashPattern`.
+        pub fn set_line_dash_pattern(
+            &self,
+            line_dash_pattern: Option<Vec<f64>>,
+        ) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    line_dash_pattern_present: true,
+                    line_dash_pattern: validated_dash_pattern(line_dash_pattern)?,
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+
+        /// Wraps `MKOverlayPathRenderer.shouldRasterize`.
+        pub fn should_rasterize(&self) -> Result<bool, MapKitError> {
+            Ok(path_state(self.raw, $label)?.should_rasterize)
+        }
+
+        /// Wraps `MKOverlayPathRenderer.shouldRasterize`.
+        pub fn set_should_rasterize(&self, should_rasterize: bool) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    should_rasterize: Some(should_rasterize),
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+    };
+}
+
+macro_rules! path_fill_methods {
+    ($label:literal) => {
+        pub fn fill_color(&self) -> Result<Option<MKColor>, MapKitError> {
+            Ok(path_state(self.raw, $label)?.fill_color)
+        }
+
+        pub fn set_fill_color(&self, fill_color: Option<MKColor>) -> Result<(), MapKitError> {
+            apply_path_options(
+                self.raw,
+                &MKOverlayPathRendererOptions {
+                    fill_color_present: true,
+                    fill_color: validated_color(fill_color, "fill color")?,
+                    ..MKOverlayPathRendererOptions::default()
+                },
+                $label,
+            )
+        }
+    };
+}
+
 /// Wraps `MKOverlayPathRenderer`.
 #[derive(Debug)]
 pub struct MKOverlayPathRenderer {
@@ -228,97 +525,8 @@ impl MKOverlayPathRenderer {
         Ok(Self { raw })
     }
 
-    fn state(&self) -> Result<MKOverlayPathRendererState, MapKitError> {
-        let mut error = ptr::null_mut();
-        let payload =
-            unsafe { ffi::mk_overlay_path_renderer_state_json(self.raw.as_ptr(), &raw mut error) };
-        if payload.is_null() {
-            Err(unsafe {
-                MapKitError::from_error_ptr(error, "failed to read MKOverlayPathRenderer state")
-            })
-        } else {
-            unsafe { parse_json_ptr(payload, "MKOverlayPathRenderer state") }
-        }
-    }
-
-    fn apply_options(&self, options: &MKOverlayPathRendererOptions) -> Result<(), MapKitError> {
-        let options = json_cstring(options, "MKOverlayPathRenderer options")?;
-        let mut error = ptr::null_mut();
-        unsafe {
-            ffi::mk_overlay_path_renderer_apply_options_json(
-                self.raw.as_ptr(),
-                options.as_ptr(),
-                &raw mut error,
-            );
-        };
-        unsafe { unit_result(error, "failed to update MKOverlayPathRenderer") }
-    }
-
-    /// Wraps `MKOverlayPathRenderer.alpha`.
-    pub fn alpha(&self) -> Result<f64, MapKitError> {
-        Ok(self.state()?.base.alpha)
-    }
-
-    /// Wraps `MKOverlayPathRenderer.contentScaleFactor`.
-    pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
-        Ok(self.state()?.base.content_scale_factor)
-    }
-
-    /// Wraps `MKOverlayPathRenderer.lineWidth`.
-    pub fn line_width(&self) -> Result<f64, MapKitError> {
-        Ok(self.state()?.line_width)
-    }
-
-    /// Wraps `MKOverlayPathRenderer.lineWidth`.
-    pub fn set_line_width(&self, line_width: f64) -> Result<(), MapKitError> {
-        self.apply_options(&MKOverlayPathRendererOptions {
-            line_width: Some(line_width),
-            ..MKOverlayPathRendererOptions::default()
-        })
-    }
-
-    /// Wraps `MKOverlayPathRenderer.lineDashPhase`.
-    pub fn line_dash_phase(&self) -> Result<f64, MapKitError> {
-        Ok(self.state()?.line_dash_phase)
-    }
-
-    /// Wraps `MKOverlayPathRenderer.lineDashPhase`.
-    pub fn set_line_dash_phase(&self, line_dash_phase: f64) -> Result<(), MapKitError> {
-        self.apply_options(&MKOverlayPathRendererOptions {
-            line_dash_phase: Some(line_dash_phase),
-            ..MKOverlayPathRendererOptions::default()
-        })
-    }
-
-    /// Wraps `MKOverlayPathRenderer.lineDashPattern`.
-    pub fn line_dash_pattern(&self) -> Result<Option<Vec<f64>>, MapKitError> {
-        Ok(self.state()?.line_dash_pattern)
-    }
-
-    /// Wraps `MKOverlayPathRenderer.lineDashPattern`.
-    pub fn set_line_dash_pattern(
-        &self,
-        line_dash_pattern: Option<Vec<f64>>,
-    ) -> Result<(), MapKitError> {
-        self.apply_options(&MKOverlayPathRendererOptions {
-            line_dash_pattern_present: true,
-            line_dash_pattern,
-            ..MKOverlayPathRendererOptions::default()
-        })
-    }
-
-    /// Wraps `MKOverlayPathRenderer.shouldRasterize`.
-    pub fn should_rasterize(&self) -> Result<bool, MapKitError> {
-        Ok(self.state()?.should_rasterize)
-    }
-
-    /// Wraps `MKOverlayPathRenderer.shouldRasterize`.
-    pub fn set_should_rasterize(&self, should_rasterize: bool) -> Result<(), MapKitError> {
-        self.apply_options(&MKOverlayPathRendererOptions {
-            should_rasterize: Some(should_rasterize),
-            ..MKOverlayPathRendererOptions::default()
-        })
-    }
+    path_style_methods!("MKOverlayPathRenderer");
+    path_fill_methods!("MKOverlayPathRenderer");
 }
 
 impl Drop for MKOverlayPathRenderer {
@@ -366,15 +574,7 @@ macro_rules! stroke_renderer_impl {
                 unsafe { unit_result(error, concat!("failed to update ", $label)) }
             }
 
-            /// Wraps `alpha`.
-            pub fn alpha(&self) -> Result<f64, MapKitError> {
-                Ok(self.state()?.base.base.alpha)
-            }
-
-            /// Wraps `line_width`.
-            pub fn line_width(&self) -> Result<f64, MapKitError> {
-                Ok(self.state()?.base.line_width)
-            }
+            path_style_methods!($label);
 
             /// Wraps `stroke_start`.
             pub fn stroke_start(&self) -> Result<f64, MapKitError> {
@@ -384,7 +584,7 @@ macro_rules! stroke_renderer_impl {
             /// Wraps `set_stroke_start`.
             pub fn set_stroke_start(&self, stroke_start: f64) -> Result<(), MapKitError> {
                 self.apply_options(&MKStrokeRendererOptions {
-                    stroke_start: Some(stroke_start),
+                    stroke_start: Some(unit_interval(stroke_start, "stroke start")?),
                     ..MKStrokeRendererOptions::default()
                 })
             }
@@ -397,7 +597,7 @@ macro_rules! stroke_renderer_impl {
             /// Wraps `set_stroke_end`.
             pub fn set_stroke_end(&self, stroke_end: f64) -> Result<(), MapKitError> {
                 self.apply_options(&MKStrokeRendererOptions {
-                    stroke_end: Some(stroke_end),
+                    stroke_end: Some(unit_interval(stroke_end, "stroke end")?),
                     ..MKStrokeRendererOptions::default()
                 })
             }
@@ -420,6 +620,10 @@ stroke_renderer_impl!(
     MKCircle,
     "MKCircleRenderer"
 );
+
+impl MKCircleRenderer {
+    path_fill_methods!("MKCircleRenderer");
+}
 
 /// Wraps `MKPolylineRenderer`.
 #[derive(Debug)]
@@ -453,6 +657,63 @@ stroke_renderer_impl!(
     "MKGradientPolylineRenderer"
 );
 
+impl MKGradientPolylineRenderer {
+    fn gradient(&self) -> Result<MKGradientPolylineColors, MapKitError> {
+        let mut error = ptr::null_mut();
+        let payload = unsafe {
+            ffi::mk_gradient_polyline_renderer_colors_json(self.raw.as_ptr(), &raw mut error)
+        };
+        if payload.is_null() {
+            Err(unsafe {
+                MapKitError::from_error_ptr(
+                    error,
+                    "failed to read MKGradientPolylineRenderer colors",
+                )
+            })
+        } else {
+            unsafe { parse_json_ptr(payload, "MKGradientPolylineRenderer colors") }
+        }
+    }
+
+    pub fn colors(&self) -> Result<Vec<MKColor>, MapKitError> {
+        Ok(self.gradient()?.colors)
+    }
+
+    pub fn locations(&self) -> Result<Vec<f64>, MapKitError> {
+        Ok(self.gradient()?.locations)
+    }
+
+    pub fn set_colors(&self, colors: &[MKColor], locations: &[f64]) -> Result<(), MapKitError> {
+        if colors.len() != locations.len() {
+            return Err(MapKitError::InvalidArgument(format!(
+                "MKGradientPolylineRenderer needs one location per color, got {} colors and {} locations",
+                colors.len(),
+                locations.len()
+            )));
+        }
+        let payload = MKGradientPolylineColors {
+            colors: colors
+                .iter()
+                .map(|color| color.validated("gradient color"))
+                .collect::<Result<_, _>>()?,
+            locations: locations
+                .iter()
+                .map(|&location| unit_interval(location, "gradient location"))
+                .collect::<Result<_, _>>()?,
+        };
+        let payload = json_cstring(&payload, "MKGradientPolylineRenderer colors")?;
+        let mut error = ptr::null_mut();
+        unsafe {
+            ffi::mk_gradient_polyline_renderer_set_colors_json(
+                self.raw.as_ptr(),
+                payload.as_ptr(),
+                &raw mut error,
+            );
+        };
+        unsafe { unit_result(error, "failed to set MKGradientPolylineRenderer colors") }
+    }
+}
+
 /// Wraps `MKPolygonRenderer`.
 #[derive(Debug)]
 pub struct MKPolygonRenderer {
@@ -468,6 +729,10 @@ stroke_renderer_impl!(
     MKPolygon,
     "MKPolygonRenderer"
 );
+
+impl MKPolygonRenderer {
+    path_fill_methods!("MKPolygonRenderer");
+}
 
 /// Wraps `MKTileOverlayRenderer`.
 #[derive(Debug)]
@@ -500,6 +765,10 @@ impl MKTileOverlayRenderer {
     /// Wraps `MKTileOverlayRenderer.alpha`.
     pub fn alpha(&self) -> Result<f64, MapKitError> {
         Ok(self.state()?.alpha)
+    }
+
+    pub fn set_alpha(&self, alpha: f64) -> Result<(), MapKitError> {
+        set_renderer_alpha(self.raw, alpha, "MKTileOverlayRenderer")
     }
 
     /// Wraps `MKTileOverlayRenderer.contentScaleFactor`.
@@ -537,104 +806,7 @@ macro_rules! path_renderer_impl {
                 Ok(Self { raw })
             }
 
-            fn state(&self) -> Result<MKOverlayPathRendererState, MapKitError> {
-                let mut error = ptr::null_mut();
-                let payload = unsafe {
-                    ffi::mk_overlay_path_renderer_state_json(self.raw.as_ptr(), &mut error)
-                };
-                if payload.is_null() {
-                    Err(unsafe {
-                        MapKitError::from_error_ptr(
-                            error,
-                            concat!("failed to read ", $label, " state"),
-                        )
-                    })
-                } else {
-                    unsafe { parse_json_ptr(payload, concat!($label, " state")) }
-                }
-            }
-
-            fn apply_options(
-                &self,
-                options: &MKOverlayPathRendererOptions,
-            ) -> Result<(), MapKitError> {
-                let options = json_cstring(options, concat!($label, " options"))?;
-                let mut error = ptr::null_mut();
-                unsafe {
-                    ffi::mk_overlay_path_renderer_apply_options_json(
-                        self.raw.as_ptr(),
-                        options.as_ptr(),
-                        &mut error,
-                    );
-                };
-                unsafe { unit_result(error, concat!("failed to update ", $label)) }
-            }
-
-            /// Wraps `alpha`.
-            pub fn alpha(&self) -> Result<f64, MapKitError> {
-                Ok(self.state()?.base.alpha)
-            }
-
-            /// Wraps `content_scale_factor`.
-            pub fn content_scale_factor(&self) -> Result<f64, MapKitError> {
-                Ok(self.state()?.base.content_scale_factor)
-            }
-
-            /// Wraps `line_width`.
-            pub fn line_width(&self) -> Result<f64, MapKitError> {
-                Ok(self.state()?.line_width)
-            }
-
-            /// Wraps `set_line_width`.
-            pub fn set_line_width(&self, line_width: f64) -> Result<(), MapKitError> {
-                self.apply_options(&MKOverlayPathRendererOptions {
-                    line_width: Some(line_width),
-                    ..MKOverlayPathRendererOptions::default()
-                })
-            }
-
-            /// Wraps `line_dash_phase`.
-            pub fn line_dash_phase(&self) -> Result<f64, MapKitError> {
-                Ok(self.state()?.line_dash_phase)
-            }
-
-            /// Wraps `set_line_dash_phase`.
-            pub fn set_line_dash_phase(&self, line_dash_phase: f64) -> Result<(), MapKitError> {
-                self.apply_options(&MKOverlayPathRendererOptions {
-                    line_dash_phase: Some(line_dash_phase),
-                    ..MKOverlayPathRendererOptions::default()
-                })
-            }
-
-            /// Wraps `line_dash_pattern`.
-            pub fn line_dash_pattern(&self) -> Result<Option<Vec<f64>>, MapKitError> {
-                Ok(self.state()?.line_dash_pattern)
-            }
-
-            /// Wraps `set_line_dash_pattern`.
-            pub fn set_line_dash_pattern(
-                &self,
-                line_dash_pattern: Option<Vec<f64>>,
-            ) -> Result<(), MapKitError> {
-                self.apply_options(&MKOverlayPathRendererOptions {
-                    line_dash_pattern_present: true,
-                    line_dash_pattern,
-                    ..MKOverlayPathRendererOptions::default()
-                })
-            }
-
-            /// Wraps `should_rasterize`.
-            pub fn should_rasterize(&self) -> Result<bool, MapKitError> {
-                Ok(self.state()?.should_rasterize)
-            }
-
-            /// Wraps `set_should_rasterize`.
-            pub fn set_should_rasterize(&self, should_rasterize: bool) -> Result<(), MapKitError> {
-                self.apply_options(&MKOverlayPathRendererOptions {
-                    should_rasterize: Some(should_rasterize),
-                    ..MKOverlayPathRendererOptions::default()
-                })
-            }
+            path_style_methods!($label);
         }
 
         impl Drop for $name {
@@ -658,6 +830,10 @@ path_renderer_impl!(
     MKMultiPolygon,
     "MKMultiPolygonRenderer"
 );
+
+impl MKMultiPolygonRenderer {
+    path_fill_methods!("MKMultiPolygonRenderer");
+}
 
 pub trait MKOverlayRendering: Sealed {
     #[doc(hidden)]
