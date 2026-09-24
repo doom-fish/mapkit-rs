@@ -5,9 +5,12 @@
 //! - Future types have the expected `Send` bounds.
 //! - The convenience constructors return the correct types.
 //!
-//! Tests that would require awaiting an actual `MapKit` network call (which
-//! needs the main run loop in a full macOS app) are marked `#[ignore]` and
-//! are documented with what the expected behaviour is.
+//! Tests that start a `MapKit` request reach Apple's servers, so they run
+//! only when `MAPKIT_LIVE_TESTS=1` is set. Awaiting a search needs the main
+//! run loop, so that check lives in `tests/main_thread.rs`.
+
+#[cfg(feature = "async")]
+mod common;
 
 #[cfg(feature = "async")]
 mod async_tests {
@@ -28,6 +31,9 @@ mod async_tests {
 
     #[test]
     fn local_search_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let request = MKLocalSearchRequest::new("pizza")
             .with_result_types(MKLocalSearchResultType::POINT_OF_INTEREST);
         let fut = AsyncMKLocalSearch::search(&request).expect("should build future");
@@ -42,6 +48,9 @@ mod async_tests {
 
     #[test]
     fn local_search_poi_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let poi_req = MKLocalPointsOfInterestRequest::with_radius(
             MKCoordinate::new(37.33, -122.03),
             500.0,
@@ -64,6 +73,9 @@ mod async_tests {
 
     #[test]
     fn directions_calculate_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let req = make_directions_request();
         let fut = AsyncMKDirections::calculate_from_request(&req).expect("should build future");
         drop(fut);
@@ -77,6 +89,9 @@ mod async_tests {
 
     #[test]
     fn directions_eta_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let req = make_directions_request();
         let fut =
             AsyncMKDirections::calculate_eta_from_request(&req).expect("should build ETA future");
@@ -95,6 +110,9 @@ mod async_tests {
 
     #[test]
     fn snapshotter_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let opts = MKMapSnapshotOptions::new(MKScreenSize::new(128.0, 128.0)).with_region(
             MKCoordinateRegion::new(
                 MKCoordinate::new(37.33, -122.03),
@@ -118,6 +136,9 @@ mod async_tests {
 
     #[test]
     fn geocoder_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let fut = AsyncMKGeocodingRequest::geocode("1 Infinite Loop, Cupertino, CA")
             .expect("should build geocoder future");
         drop(fut);
@@ -131,6 +152,9 @@ mod async_tests {
 
     #[test]
     fn reverse_geocoder_future_constructs() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let fut = AsyncMKReverseGeocodingRequest::reverse_geocode(MKCoordinate::new(37.33, -122.03))
             .expect("should build reverse geocoder future");
         drop(fut);
@@ -143,29 +167,16 @@ mod async_tests {
     }
 
     // ------------------------------------------------------------------
-    // Happy-path integration tests (ignored in headless CI — require the
-    // main run loop and a network connection)
+    // Happy-path integration tests (require a network connection)
     // ------------------------------------------------------------------
 
-    /// Awaiting a real local search with pollster.
-    /// Requires: macOS with main run loop + network.
-    #[test]
-    #[ignore = "requires main run loop and network access"]
-    fn local_search_resolves() {
-        let request = MKLocalSearchRequest::new("Cupertino")
-            .with_result_types(MKLocalSearchResultType::ADDRESS);
-        let fut = AsyncMKLocalSearch::search(&request).expect("build");
-        let result = pollster::block_on(fut);
-        let resp = result.expect("search should succeed");
-        assert!(!resp.map_items.is_empty(), "expected at least one result");
-    }
-
     /// Awaiting a real snapshot with pollster.
-    /// `MKMapSnapshotter` uses a background queue, so this MAY work
-    /// headlessly.  Marked ignored by default to avoid CI flakiness.
+    /// `MKMapSnapshotter` uses a background queue, so this works headlessly.
     #[test]
-    #[ignore = "may require a running display / MapKit rendering pipeline"]
     fn snapshot_resolves() {
+        if !crate::common::live_tests_enabled() {
+            return;
+        }
         let opts = MKMapSnapshotOptions::new(MKScreenSize::new(64.0, 64.0)).with_region(
             MKCoordinateRegion::new(
                 MKCoordinate::new(37.33, -122.03),

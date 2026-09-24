@@ -199,7 +199,7 @@ Expected success footer from the smoke example:
 ## Notes
 
 - The examples are designed to exit successfully on a headless macOS host.
-- `tests/main_thread.rs` is a harness-free test binary that runs on the process main thread, so `cargo test` exercises the views, the map view delegate and the search completer headlessly. Its completer delivery check needs network access and prints a skip line when MapKit returns nothing within 20 seconds.
+- `tests/main_thread.rs` is a harness-free test binary that runs on the process main thread, so `cargo test` exercises the views, the map view delegate and the search completer headlessly. Tests that reach Apple's servers (map loading, user location, search, the completer and snapshots) run only when `MAPKIT_LIVE_TESTS=1` is set, so a plain `cargo test` makes no network requests.
 - `MKUserTrackingButton` is not exposed as a standalone native macOS class in the SDK, so this crate wraps the equivalent `MKMapView.showsUserTrackingButton` / `userTrackingMode` functionality instead.
 - `COVERAGE.md` and `COVERAGE_AUDIT.md` document the audited surface, which UI/controller types are Rust-side models rather than AppKit objects, and the two exempt SDK declarations.
 

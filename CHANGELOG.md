@@ -70,6 +70,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the run loop of the thread that set the query, so the completer is now
   main-thread only: its calls run inline there, results reach a real delegate,
   and nothing in the bridge waits on the main queue without a deadline.
+- A plain `cargo test` reached Apple's servers: the snapshot tests downloaded
+  map tiles, the async future tests started a snapshot and queued search,
+  directions and geocoding requests, and the main-thread checks loaded maps,
+  started location services and searched with the completer. Those tests now
+  run only when `MAPKIT_LIVE_TESTS=1` is set, so a plain `cargo test` makes no
+  network requests. The awaited local search moved to `tests/main_thread.rs`,
+  where the main run loop can deliver it.
 
 ### Changed
 

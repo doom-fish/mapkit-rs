@@ -6,6 +6,8 @@ use std::time::{Duration, Instant};
 
 use mapkit::prelude::*;
 
+mod common;
+
 #[link(name = "CoreFoundation", kind = "framework")]
 extern "C" {
     static kCFRunLoopDefaultMode: *const c_void;
@@ -117,7 +119,6 @@ fn annotation_views_build() {
 
     let map_view = MKMapView::new(MKScreenSize::new(320.0, 200.0)).unwrap();
     map_view.add_annotation(&map_item_annotation).unwrap();
-    map_view.set_shows_user_location(true).unwrap();
     let user_location = map_view.user_location().unwrap();
     let user_view = MKUserLocationView::new(Some(&user_location), Some("user-id")).unwrap();
     user_view.set_can_show_callout(true).unwrap();
@@ -129,6 +130,8 @@ fn annotation_views_build() {
 
 fn user_tracking_button_updates_map_view() {
     let map_view = MKMapView::new(MKScreenSize::new(256.0, 256.0)).unwrap();
+    map_view.set_shows_user_location(true).unwrap();
+    assert!(map_view.shows_user_location().unwrap());
     let button = MKUserTrackingButton::new(&map_view);
     button.set_visible(true).unwrap();
     button
@@ -175,10 +178,8 @@ fn completer_state_round_trips_on_the_main_thread() {
         | MKLocalSearchCompleterResultType::POINT_OF_INTEREST;
     completer.set_region(region).unwrap();
     completer.set_result_types(result_types).unwrap();
-    completer.set_query_fragment("coffee").unwrap();
-    completer.cancel();
 
-    assert_eq!(completer.query_fragment().unwrap(), "coffee");
+    assert_eq!(completer.query_fragment().unwrap(), "");
     assert_eq!(completer.result_types().unwrap(), result_types);
     assert!((completer.region().unwrap().center.latitude - apple_park().latitude).abs() < 1e-6);
     assert!(completer.results().unwrap().is_empty());
@@ -362,14 +363,39 @@ fn completer_delegate_receives_results_on_the_main_thread() {
     autoreleasing(|| drop(registration));
     assert_eq!(log.drops.load(Ordering::SeqCst), 1);
 
-    let Some(event) = events.first() else {
-        println!("skip: MapKit delivered no completer result within 20 seconds");
-        return;
-    };
+    let event = events
+        .first()
+        .expect("MapKit delivered no completer result within 20 seconds");
     assert!(
         event.starts_with("live update main=true query=coffee same=true ")
             || event.starts_with("live fail main=true query=coffee framework=true: "),
         "{events:?}"
+    );
+}
+
+#[cfg(feature = "async")]
+fn async_local_search_resolves() {
+    let worker = thread::spawn(|| {
+        let request = MKLocalSearchRequest::new("Cupertino")
+            .with_result_types(MKLocalSearchResultType::ADDRESS);
+        let future = mapkit::async_api::AsyncMKLocalSearch::search(&request).expect("build");
+        pollster::block_on(future)
+    });
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while !worker.is_finished() && Instant::now() < deadline {
+        autoreleasing(|| pump_main_run_loop(5));
+    }
+    assert!(
+        worker.is_finished(),
+        "the local search did not resolve within 30 seconds"
+    );
+    let response = worker
+        .join()
+        .expect("worker thread")
+        .expect("search should succeed");
+    assert!(
+        !response.map_items.is_empty(),
+        "expected at least one result"
     );
 }
 
@@ -476,13 +502,9 @@ fn reentrant_and_panicking_delegates_are_contained() {
 }
 
 fn main() {
-    let checks: [(&str, fn()); 11] = [
+    let offline: Vec<(&str, fn())> = vec![
         ("map_view_round_trip", map_view_round_trip),
         ("annotation_views_build", annotation_views_build),
-        (
-            "user_tracking_button_updates_map_view",
-            user_tracking_button_updates_map_view,
-        ),
         ("views_refuse_other_threads", views_refuse_other_threads),
         (
             "synchronous_waits_refuse_the_main_thread",
@@ -497,10 +519,6 @@ fn main() {
             completer_delegates_are_replaced_and_released,
         ),
         (
-            "delegate_receives_region_changes_and_supplies_renderers",
-            delegate_receives_region_changes_and_supplies_renderers,
-        ),
-        (
             "replacing_the_delegate_keeps_the_new_one",
             replacing_the_delegate_keeps_the_new_one,
         ),
@@ -508,14 +526,42 @@ fn main() {
             "reentrant_and_panicking_delegates_are_contained",
             reentrant_and_panicking_delegates_are_contained,
         ),
+    ];
+    #[cfg_attr(not(feature = "async"), allow(unused_mut))]
+    let mut live: Vec<(&str, fn())> = vec![
+        (
+            "user_tracking_button_updates_map_view",
+            user_tracking_button_updates_map_view,
+        ),
+        (
+            "delegate_receives_region_changes_and_supplies_renderers",
+            delegate_receives_region_changes_and_supplies_renderers,
+        ),
         (
             "completer_delegate_receives_results_on_the_main_thread",
             completer_delegate_receives_results_on_the_main_thread,
         ),
     ];
-    for (name, check) in checks {
+    #[cfg(feature = "async")]
+    live.push(("async_local_search_resolves", async_local_search_resolves));
+
+    for (name, check) in &offline {
         check();
         println!("test {name} ... ok");
     }
-    println!("test result: ok. {} passed; 0 failed", checks.len());
+    let run_live = common::live_tests_enabled();
+    for (name, check) in &live {
+        if run_live {
+            check();
+            println!("test {name} ... ok");
+        } else {
+            println!("test {name} ... skipped");
+        }
+    }
+    let (passed, skipped) = if run_live {
+        (offline.len() + live.len(), 0)
+    } else {
+        (offline.len(), live.len())
+    };
+    println!("test result: ok. {passed} passed; 0 failed; {skipped} skipped");
 }

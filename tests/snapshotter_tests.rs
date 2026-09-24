@@ -1,7 +1,12 @@
 use mapkit::prelude::*;
 
+mod common;
+
 #[test]
 fn snapshotter_produces_snapshot() {
+    if !common::live_tests_enabled() {
+        return;
+    }
     let center = MKCoordinate::new(37.3349, -122.0090);
     let options = MKMapSnapshotOptions::new(MKScreenSize::new(300.0, 180.0))
         .with_region(MKCoordinateRegion::with_distance(center, 800.0, 800.0).unwrap());
