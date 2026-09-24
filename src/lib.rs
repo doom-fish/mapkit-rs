@@ -133,7 +133,8 @@ pub use local_search::{
 };
 /// Re-exports MapKit wrappers such as `MKLocalSearchCompleter`, `MKLocalSearchCompleterDelegate`, and `MKLocalSearchCompleterResultType`.
 pub use local_search_completer::{
-    MKLocalSearchCompleter, MKLocalSearchCompleterDelegate, MKLocalSearchCompleterResultType,
+    MKLocalSearchCompleter, MKLocalSearchCompleterDelegate,
+    MKLocalSearchCompleterDelegateRegistration, MKLocalSearchCompleterResultType,
     MKLocalSearchCompletion, MKTextHighlightRange,
 };
 /// Re-exports MapKit wrappers such as `MKLookAroundScene`, `MKLookAroundSceneRequest`, and `MKLookAroundSnapshot`.
@@ -241,7 +242,8 @@ pub mod prelude {
     };
     /// Re-exports MapKit wrappers such as `MKLocalSearchCompleter`, `MKLocalSearchCompleterDelegate`, and `MKLocalSearchCompleterResultType`.
     pub use crate::local_search_completer::{
-        MKLocalSearchCompleter, MKLocalSearchCompleterDelegate, MKLocalSearchCompleterResultType,
+        MKLocalSearchCompleter, MKLocalSearchCompleterDelegate,
+        MKLocalSearchCompleterDelegateRegistration, MKLocalSearchCompleterResultType,
         MKLocalSearchCompletion, MKTextHighlightRange,
     };
     /// Re-exports MapKit wrappers such as `MKLookAroundScene`, `MKLookAroundSceneRequest`, and `MKLookAroundSnapshot`.

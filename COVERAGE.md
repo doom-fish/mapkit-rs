@@ -15,6 +15,7 @@ The audited public macOS 26.2 surface is covered for non-exempt declarations: 24
 | Overlay | `MKCircle`, `MKPolyline`, `MKMultiPolyline`, `MKPolygon`, `MKMultiPolygon`, overlay level handling, bounding map rect, and coordinate extraction | ✅ | `src/overlay.rs`, `Overlay.swift` |
 | OverlayRenderer | `MKOverlayRenderer`, `MKOverlayPathRenderer`, circle/polyline/polygon/tile renderers, gradient polyline, and multi-overlay renderers; alpha on every renderer; stroke color, line width, cap, join, miter limit, dash phase and pattern, and rasterization on every path renderer; fill color on the circle, polygon, multi-polygon and generic path renderers; gradient colors and locations; stroke start and end | ✅ | `src/overlay_renderer.rs`, `OverlayRenderer.swift`. Values are validated in Rust. The subclassing hooks (`createPath`, `path`, `applyStrokePropertiesToContext:`, custom drawing) are not bridged. |
 | LocalSearch | `MKLocalSearch`, `MKLocalSearch.Request`, `MKLocalSearch.Response`, result types, region priority, POI/address filtering hooks | ✅ | `src/local_search.rs`, `LocalSearch.swift` |
+| LocalSearchCompleter | `MKLocalSearchCompleter` query fragment, region, region priority, result types, point-of-interest and address filters, results, searching state and `cancel`, plus `MKLocalSearchCompleterDelegate` | ✅ | `src/local_search_completer.rs`, `LocalSearchCompleter.swift`. Main thread only. `MKLocalSearchCompleter::set_delegate` installs a Swift proxy that MapKit calls on the main thread. |
 | Directions | `MKDirections`, request, ETA, routes, steps, transport types, toll/highway preferences | ✅ | `src/directions.rs`, `Directions.swift` |
 | Snapshotter | `MKMapSnapshotter`, options, snapshot size/point lookup | ✅ | `src/snapshotter.rs`, `Snapshotter.swift` |
 | Geocoder | `MKGeocodingRequest`, `MKReverseGeocodingRequest`, locale and region configuration, async map-item retrieval | ✅ | `src/geocoder.rs`, `Geocoder.swift` |
@@ -38,5 +39,5 @@ The audited public macOS 26.2 surface is covered for non-exempt declarations: 24
 
 ## Notes
 
-- `MKMapView`, the annotation views and `MKUserTrackingButton` are real AppKit objects and must be used on the main thread. Overlay renderers are not main-thread bound and can be created and styled on any thread. The controls, selection accessories and view controllers listed above are Rust-side models, not `NSView` / `NSViewController` bindings.
+- `MKMapView`, the annotation views and `MKUserTrackingButton` are real AppKit objects and, like `MKLocalSearchCompleter`, must be used on the main thread; elsewhere they return `MapKitError::MainThreadRequired`. Overlay renderers are not main-thread bound and can be created and styled on any thread. The controls, selection accessories and view controllers listed above are Rust-side models, not `NSView` / `NSViewController` bindings.
 - `COVERAGE_AUDIT.md` is the source-of-truth symbol ledger used to track verified vs exempt declarations.

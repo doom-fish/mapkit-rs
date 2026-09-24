@@ -70,7 +70,8 @@ println!("Found {} results", response.map_items.len());
 > main queue; the main run loop must be active for those futures to resolve.
 > `MKMapSnapshotter` uses a background queue and has no such restriction.
 >
-> `MKLocalSearchCompleter` updates are not exposed as a stream yet.
+> `MKLocalSearchCompleter` updates are not exposed as a stream; they arrive
+> through `MKLocalSearchCompleter::set_delegate` (see below).
 > `MKMapViewDelegate` is a callback delegate; see below.
 
 ## Map view delegate
@@ -111,11 +112,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 The delegate also receives region, loading, rendering, selection, drag, user-location and tracking-mode callbacks. `mapView(_:viewFor:)`, `didAdd` views and renderers, cluster annotations and selection accessories are not bridged.
 
+## Search completer
+
+`MKLocalSearchCompleter` belongs to the main thread: MapKit starts a search from the run loop of the thread that sets the query and delivers the results on the main thread. `MKLocalSearchCompleter::set_delegate` connects an `MKLocalSearchCompleterDelegate`, which MapKit calls there while the main run loop runs, and returns a registration; dropping it removes the delegate:
+
+```rust,no_run
+use mapkit::prelude::*;
+
+struct Suggestions;
+
+impl MKLocalSearchCompleterDelegate for Suggestions {
+    fn completer_did_update_results(
+        &mut self,
+        _completer: &MKLocalSearchCompleter,
+        results: &[MKLocalSearchCompletion],
+    ) {
+        for result in results {
+            println!("{}: {}", result.title, result.subtitle);
+        }
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let completer = MKLocalSearchCompleter::new()?;
+    let _delegate = completer.set_delegate(Suggestions)?;
+    completer.set_query_fragment("coffee")?;
+    Ok(())
+}
+```
+
 ## Threads
 
 - `MKMapView`, the annotation views and `MKUserTrackingButton` are AppKit views and are `!Send`. Create and use them on the main thread; on any other thread their methods return `MapKitError::MainThreadRequired` instead of hopping to the main queue.
-- MapKit calls the map view delegate on the main thread. A callback that MapKit raises while another callback of the same delegate is still running is skipped rather than re-entering the delegate.
-- MapKit delivers `MKLocalSearch`, `MKDirections`, geocoding, Look Around, `MKMapItemRequest` and `MKLocalSearchCompleter` results on the main queue. Their synchronous methods wait for that result, so they return an error on the main thread instead of spinning its run loop. Call them from another thread while the main thread runs its run loop, or use the `async` API. A wait that times out cancels the request and returns an error.
+- `MKLocalSearchCompleter` is `!Send` and follows the same rule: create and use it on the main thread, where MapKit updates it and calls its delegate. On any other thread it returns `MapKitError::MainThreadRequired`.
+- MapKit calls the map view and completer delegates on the main thread. A callback that MapKit raises while another callback of the same delegate is still running is skipped rather than re-entering the delegate.
+- MapKit delivers `MKLocalSearch`, `MKDirections`, geocoding, Look Around and `MKMapItemRequest` results on the main queue. Their synchronous methods wait for that result, so they return an error on the main thread instead of spinning its run loop. Call them from another thread while the main thread runs its run loop, or use the `async` API. A wait that times out cancels the request and returns an error.
 - `MKMapSnapshotter` delivers on a background queue and works from any thread.
 - Overlay renderers aren't bound to a thread: MapKit draws them on background threads, and they can be created and styled on any thread.
 
@@ -168,7 +199,7 @@ Expected success footer from the smoke example:
 ## Notes
 
 - The examples are designed to exit successfully on a headless macOS host.
-- `tests/main_thread.rs` is a harness-free test binary that runs on the process main thread, so `cargo test` exercises the views and the map view delegate headlessly.
+- `tests/main_thread.rs` is a harness-free test binary that runs on the process main thread, so `cargo test` exercises the views, the map view delegate and the search completer headlessly. Its completer delivery check needs network access and prints a skip line when MapKit returns nothing within 20 seconds.
 - `MKUserTrackingButton` is not exposed as a standalone native macOS class in the SDK, so this crate wraps the equivalent `MKMapView.showsUserTrackingButton` / `userTrackingMode` functionality instead.
 - `COVERAGE.md` and `COVERAGE_AUDIT.md` document the audited surface, which UI/controller types are Rust-side models rather than AppKit objects, and the two exempt SDK declarations.
 

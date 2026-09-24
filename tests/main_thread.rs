@@ -2,7 +2,7 @@ use std::ffi::c_void;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use mapkit::prelude::*;
 
@@ -18,6 +18,10 @@ extern "C" {
     fn objc_autoreleasePoolPop(pool: *mut c_void);
 }
 
+extern "C" {
+    fn pthread_main_np() -> i32;
+}
+
 fn autoreleasing<R>(body: impl FnOnce() -> R) -> R {
     let pool = unsafe { objc_autoreleasePoolPush() };
     let result = body();
@@ -29,13 +33,6 @@ fn pump_main_run_loop(iterations: usize) {
     for _ in 0..iterations {
         unsafe { CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.02, 0) };
     }
-}
-
-fn pump_main_run_loop_until_done<T>(worker: thread::JoinHandle<T>) -> T {
-    while !worker.is_finished() {
-        unsafe { CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.02, 0) };
-    }
-    worker.join().expect("worker thread")
 }
 
 const fn apple_park() -> MKCoordinate {
@@ -171,13 +168,20 @@ fn synchronous_waits_refuse_the_main_thread() {
     assert!(error.to_string().contains("main thread"), "{error}");
 }
 
-fn completer_accepts_an_unbounded_timeout() {
-    let worker = thread::spawn(|| {
-        let completer = MKLocalSearchCompleter::new().unwrap();
-        completer.refresh_with_timeout(Duration::MAX)
-    });
-    let results = pump_main_run_loop_until_done(worker).expect("completer results");
-    assert!(results.is_empty());
+fn completer_state_round_trips_on_the_main_thread() {
+    let completer = MKLocalSearchCompleter::new().unwrap();
+    let region = MKCoordinateRegion::with_distance(apple_park(), 2_000.0, 2_000.0).unwrap();
+    let result_types = MKLocalSearchCompleterResultType::ADDRESS
+        | MKLocalSearchCompleterResultType::POINT_OF_INTEREST;
+    completer.set_region(region).unwrap();
+    completer.set_result_types(result_types).unwrap();
+    completer.set_query_fragment("coffee").unwrap();
+    completer.cancel();
+
+    assert_eq!(completer.query_fragment().unwrap(), "coffee");
+    assert_eq!(completer.result_types().unwrap(), result_types);
+    assert!((completer.region().unwrap().center.latitude - apple_park().latitude).abs() < 1e-6);
+    assert!(completer.results().unwrap().is_empty());
 }
 
 #[derive(Default)]
@@ -259,6 +263,114 @@ impl MKMapViewDelegate for RecordingDelegate {
             _ => None,
         }
     }
+}
+
+struct CompleterRecorder {
+    log: Arc<Log>,
+    name: &'static str,
+}
+
+impl CompleterRecorder {
+    fn new(log: &Arc<Log>, name: &'static str) -> Self {
+        Self {
+            log: Arc::clone(log),
+            name,
+        }
+    }
+}
+
+impl Drop for CompleterRecorder {
+    fn drop(&mut self) {
+        self.log.drops.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+impl MKLocalSearchCompleterDelegate for CompleterRecorder {
+    fn completer_did_update_results(
+        &mut self,
+        completer: &MKLocalSearchCompleter,
+        results: &[MKLocalSearchCompletion],
+    ) {
+        self.log.push(format!(
+            "{} update main={} query={} same={} count={}",
+            self.name,
+            unsafe { pthread_main_np() } != 0,
+            completer.query_fragment().unwrap(),
+            completer.results().unwrap() == results,
+            results.len()
+        ));
+    }
+
+    fn completer_did_fail_with_error(
+        &mut self,
+        completer: &MKLocalSearchCompleter,
+        error: &MapKitError,
+    ) {
+        self.log.push(format!(
+            "{} fail main={} query={} framework={}: {error}",
+            self.name,
+            unsafe { pthread_main_np() } != 0,
+            completer.query_fragment().unwrap(),
+            matches!(error, MapKitError::Framework(_))
+        ));
+    }
+}
+
+fn completer_delegates_are_replaced_and_released() {
+    let log = Arc::new(Log::default());
+    let completer = MKLocalSearchCompleter::new().unwrap();
+    let second = autoreleasing(|| {
+        let first = completer
+            .set_delegate(CompleterRecorder::new(&log, "first"))
+            .unwrap();
+        let second = completer
+            .set_delegate(CompleterRecorder::new(&log, "second"))
+            .unwrap();
+        drop(first);
+        second
+    });
+    assert_eq!(log.drops.load(Ordering::SeqCst), 1);
+
+    autoreleasing(|| {
+        drop(completer);
+        drop(second);
+    });
+    assert_eq!(log.drops.load(Ordering::SeqCst), 2);
+    assert!(log.take().is_empty());
+}
+
+fn completer_delegate_receives_results_on_the_main_thread() {
+    let log = Arc::new(Log::default());
+    let completer = MKLocalSearchCompleter::new().unwrap();
+    let registration = autoreleasing(|| {
+        let registration = completer
+            .set_delegate(CompleterRecorder::new(&log, "live"))
+            .unwrap();
+        let region = MKCoordinateRegion::with_distance(apple_park(), 5_000.0, 5_000.0).unwrap();
+        completer.set_region(region).unwrap();
+        completer.set_query_fragment("coffee").unwrap();
+        registration
+    });
+
+    let deadline = Instant::now() + Duration::from_secs(20);
+    let mut events = Vec::new();
+    while events.is_empty() && Instant::now() < deadline {
+        autoreleasing(|| pump_main_run_loop(5));
+        events = log.take();
+    }
+    completer.cancel();
+    autoreleasing(|| drop(registration));
+    assert_eq!(log.drops.load(Ordering::SeqCst), 1);
+
+    let Some(event) = events.first() else {
+        println!("skip: MapKit delivered no completer result within 20 seconds");
+        return;
+    };
+    assert!(
+        event.starts_with("live update main=true query=coffee same=true ")
+            || event.starts_with("live fail main=true query=coffee framework=true: "),
+        "{events:?}"
+    );
 }
 
 fn change_region(map_view: &MKMapView, meters: f64) {
@@ -364,7 +476,7 @@ fn reentrant_and_panicking_delegates_are_contained() {
 }
 
 fn main() {
-    let checks: [(&str, fn()); 9] = [
+    let checks: [(&str, fn()); 11] = [
         ("map_view_round_trip", map_view_round_trip),
         ("annotation_views_build", annotation_views_build),
         (
@@ -377,8 +489,12 @@ fn main() {
             synchronous_waits_refuse_the_main_thread,
         ),
         (
-            "completer_accepts_an_unbounded_timeout",
-            completer_accepts_an_unbounded_timeout,
+            "completer_state_round_trips_on_the_main_thread",
+            completer_state_round_trips_on_the_main_thread,
+        ),
+        (
+            "completer_delegates_are_replaced_and_released",
+            completer_delegates_are_replaced_and_released,
         ),
         (
             "delegate_receives_region_changes_and_supplies_renderers",
@@ -391,6 +507,10 @@ fn main() {
         (
             "reentrant_and_panicking_delegates_are_contained",
             reentrant_and_panicking_delegates_are_contained,
+        ),
+        (
+            "completer_delegate_receives_results_on_the_main_thread",
+            completer_delegate_receives_results_on_the_main_thread,
         ),
     ];
     for (name, check) in checks {

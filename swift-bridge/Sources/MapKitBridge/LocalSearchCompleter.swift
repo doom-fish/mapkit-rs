@@ -36,26 +36,50 @@ struct MKRLocalSearchCompleterOptionsPayload: Codable {
     var addressFilter: MKRAddressFilterPayload?
 }
 
-private final class MKRLocalSearchCompleterProxy: NSObject, MKLocalSearchCompleterDelegate {
-    private let callback: (Result<[MKRLocalSearchCompletionPayload], Error>) -> Void
-    private var completed = false
+public typealias MKRLocalSearchCompleterEventCallback = @convention(c) (
+    UnsafeMutableRawPointer?,
+    UnsafeMutableRawPointer?,
+    UnsafeMutablePointer<CChar>?,
+    UnsafeMutablePointer<CChar>?
+) -> Void
 
-    init(callback: @escaping (Result<[MKRLocalSearchCompletionPayload], Error>) -> Void) {
-        self.callback = callback
+final class MKRLocalSearchCompleterDelegateProxy: NSObject, MKLocalSearchCompleterDelegate {
+    private let context: UnsafeMutableRawPointer
+    private let releaseContext: MKRContextCallback
+    private let onEvent: MKRLocalSearchCompleterEventCallback
+
+    init(
+        context: UnsafeMutableRawPointer,
+        retainContext: MKRContextCallback,
+        releaseContext: @escaping MKRContextCallback,
+        onEvent: @escaping MKRLocalSearchCompleterEventCallback
+    ) {
+        retainContext(context)
+        self.context = context
+        self.releaseContext = releaseContext
+        self.onEvent = onEvent
+    }
+
+    deinit {
+        releaseContext(context)
     }
 
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        finish(.success(completer.results.map(mkrEncodeLocalSearchCompletion)))
+        do {
+            let json = try mkrEncodeJSON(completer.results.map(mkrEncodeLocalSearchCompletion))
+            onEvent(context, mkrRetain(completer), mkrCString(json), nil)
+        } catch {
+            fail(completer, error)
+        }
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: any Error) {
-        finish(.failure(error))
+        fail(completer, error)
     }
 
-    private func finish(_ result: Result<[MKRLocalSearchCompletionPayload], Error>) {
-        guard !completed else { return }
-        completed = true
-        callback(result)
+    private func fail(_ completer: MKLocalSearchCompleter, _ error: Error) {
+        let json = (try? mkrEncodeJSON(mkrErrorPayload(from: error))) ?? error.localizedDescription
+        onEvent(context, mkrRetain(completer), nil, mkrCString(json))
     }
 }
 
@@ -81,8 +105,14 @@ func mkrEncodeLocalSearchCompletion(
 public func mk_local_search_completer_new(
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutableRawPointer? {
-    let completer = MKLocalSearchCompleter()
-    return mkrRetain(completer)
+    do {
+        return try mkrOnMainThread("MKLocalSearchCompleter") {
+            mkrRetain(MKLocalSearchCompleter())
+        }
+    } catch {
+        mkrSetError(outError, error)
+        return nil
+    }
 }
 
 @_cdecl("mk_local_search_completer_state_json")
@@ -97,7 +127,7 @@ public func mk_local_search_completer_state_json(
 
     do {
         let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
-        let payload = try mkrSyncOnMain {
+        let payload = try mkrOnMainThread("MKLocalSearchCompleter") {
             MKRLocalSearchCompleterStatePayload(
                 queryFragment: bridge.queryFragment,
                 region: mkrEncodeRegion(bridge.region),
@@ -140,7 +170,7 @@ public func mk_local_search_completer_apply_options_json(
     do {
         let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRLocalSearchCompleterOptionsPayload.self)
-        try mkrSyncOnMain {
+        try mkrOnMainThread("MKLocalSearchCompleter") {
             if payload.queryFragmentPresent {
                 bridge.queryFragment = payload.queryFragment ?? ""
             }
@@ -181,45 +211,61 @@ public func mk_local_search_completer_apply_options_json(
     }
 }
 
-@_cdecl("mk_local_search_completer_refresh_json")
-public func mk_local_search_completer_refresh_json(
+@_cdecl("mk_local_search_completer_set_delegate")
+public func mk_local_search_completer_set_delegate(
     _ completer: UnsafeMutableRawPointer?,
-    _ timeoutMillis: UInt64,
+    _ context: UnsafeMutableRawPointer?,
+    _ retainContext: MKRContextCallback?,
+    _ releaseContext: MKRContextCallback?,
+    _ onEvent: MKRLocalSearchCompleterEventCallback?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-) -> UnsafeMutablePointer<CChar>? {
-    guard let completer else {
-        mkrSetMessageError(outError, message: "missing MKLocalSearchCompleter")
+) -> UnsafeMutableRawPointer? {
+    guard let completer, let context, let retainContext, let releaseContext, let onEvent else {
+        mkrSetMessageError(outError, message: "missing MKLocalSearchCompleter delegate arguments")
         return nil
     }
 
     do {
-        let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
-        let timeoutSeconds = max(Double(timeoutMillis) / 1000, 0.1)
-        let results = try mkrAwaitOnMain(timeoutSeconds: timeoutSeconds, cancel: { bridge.cancel() }) { completion in
-            if !bridge.isSearching {
-                completion(.success(bridge.results.map(mkrEncodeLocalSearchCompletion)))
-                return
-            }
-
-            var proxy: MKRLocalSearchCompleterProxy?
-            proxy = MKRLocalSearchCompleterProxy { result in
-                bridge.delegate = nil
-                _ = proxy
-                proxy = nil
-                completion(result)
-            }
+        return try mkrOnMainThread("MKLocalSearchCompleter") {
+            let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
+            let proxy = MKRLocalSearchCompleterDelegateProxy(
+                context: context,
+                retainContext: retainContext,
+                releaseContext: releaseContext,
+                onEvent: onEvent
+            )
             bridge.delegate = proxy
+            return mkrRetain(proxy)
         }
-        return mkrCString(try mkrEncodeJSON(results))
     } catch {
         mkrSetError(outError, error)
         return nil
     }
 }
 
+@_cdecl("mk_local_search_completer_clear_delegate")
+public func mk_local_search_completer_clear_delegate(
+    _ completer: UnsafeMutableRawPointer?,
+    _ proxy: UnsafeMutableRawPointer?
+) {
+    guard let completer, let proxy else { return }
+    let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
+    let delegate = mkrBorrow(proxy, as: MKRLocalSearchCompleterDelegateProxy.self)
+    let clear = {
+        if (bridge.delegate as AnyObject?) === delegate {
+            bridge.delegate = nil
+        }
+    }
+    if Thread.isMainThread {
+        clear()
+    } else {
+        DispatchQueue.main.async(execute: clear)
+    }
+}
+
 @_cdecl("mk_local_search_completer_cancel")
 public func mk_local_search_completer_cancel(_ completer: UnsafeMutableRawPointer?) {
-    guard let completer else { return }
+    guard let completer, Thread.isMainThread else { return }
     let bridge = mkrBorrow(completer, as: MKLocalSearchCompleter.self)
     bridge.cancel()
 }

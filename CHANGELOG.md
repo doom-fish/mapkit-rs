@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `map_view_renderer_for_overlay`.
 - `MKOverlayRendering`, implemented by every renderer type.
 - `tests/main_thread.rs`, a harness-free test binary that runs the view round
-  trips and the delegate on the process main thread.
+  trips, the map view delegate and the search completer on the process main
+  thread.
 - Style setters and getters on every path renderer (`MKOverlayPathRenderer`,
   `MKCircleRenderer`, `MKPolylineRenderer`, `MKGradientPolylineRenderer`,
   `MKPolygonRenderer`, `MKMultiPolylineRenderer` and `MKMultiPolygonRenderer`):
@@ -31,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the new sRGB `MKColor`; caps and joins are `MKLineCap` and `MKLineJoin`.
 - `MKGradientPolylineRenderer::set_colors`, `colors` and `locations`.
 - `MKTileOverlayRenderer::set_alpha`.
+- `MKLocalSearchCompleter::set_delegate` connects an
+  `MKLocalSearchCompleterDelegate` through a Swift proxy and returns an
+  `MKLocalSearchCompleterDelegateRegistration`; dropping it removes the
+  delegate. MapKit calls it on the main thread with each new set of results or
+  the error. As with the map view delegate, the delegate lives in a
+  `CallbackContext` that the proxy keeps alive until MapKit can no longer call
+  it, re-entrant callbacks are skipped and panics are contained.
 - `MapKitError::MainThreadRequired`, returned by main-thread-only objects used
   on another thread.
 
@@ -42,13 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after a timeout, while a late completion could still write it, and never
   cancelled. The result is now lock-protected and a timeout cancels the
   snapshot.
-- On the main thread, synchronous search, directions, geocoding, Look Around,
-  map-item and completer calls spun the run loop, re-entering the app's event
-  handling mid-call. They now return an error there. Off the main thread their
+- On the main thread, synchronous search, directions, geocoding, Look Around
+  and map-item calls spun the run loop, re-entering the app's event handling
+  mid-call. They now return an error there. Off the main thread their
   result is lock-protected, and a timeout cancels the request.
-- A caller-supplied timeout such as
-  `MKLocalSearchCompleter::refresh_with_timeout(Duration::MAX)` trapped in
-  `Int(timeoutSeconds * 1000)`. Timeouts are clamped to one day.
 - Creating an `MKGeocodingRequest` or `MKReverseGeocodingRequest` before macOS
   26 ran macOS 26 code. It now returns an error.
 - `COVERAGE.md` and the audits no longer present the Rust-only control and
@@ -58,6 +63,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `DispatchQueue.main.sync`, which deadlocked whenever the main thread was
   blocked, for example under the default test harness. MapKit's renderers are
   not main-thread bound, so the bridge now calls them on the caller's thread.
+- `MKLocalSearchCompleter`'s state and option calls hopped to the main queue
+  with `DispatchQueue.main.sync` and no timeout, so they hung whenever the main
+  thread was blocked, and its `refresh*` methods waited for the main queue.
+  MapKit delivers completer results on the main thread and only starts a search
+  from the run loop of the thread that set the query, so the completer is now
+  main-thread only: its calls run inline there, results reach a real delegate,
+  and nothing in the bridge waits on the main queue without a deadline.
 
 ### Changed
 
@@ -75,8 +87,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   return `MapKitError::MainThreadRequired` when used off the main thread
   instead of hopping to the main queue with `DispatchQueue.main.sync`, which
   deadlocked when the main thread was waiting.
-- **Breaking:** synchronous search, directions, geocoding, Look Around,
-  map-item and completer calls return an error on the main thread.
+- **Breaking:** `MKLocalSearchCompleter::new` and the completer's calls return
+  `MapKitError::MainThreadRequired` off the main thread instead of hopping to
+  the main queue with `DispatchQueue.main.sync`. `MKLocalSearchCompleterDelegate`
+  requires `Send + 'static`.
+- **Breaking:** synchronous search, directions, geocoding, Look Around and
+  map-item calls return an error on the main thread.
 - **Breaking:** `MKMapViewDelegate` now requires `Send + 'static`.
   `map_view_renderer_for_overlay` takes an `&MKAnyOverlay` and returns
   `Option<Box<dyn MKOverlayRendering>>`.
@@ -91,6 +107,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `map_view_did_add_overlay_renderers` and
   `map_view_cluster_annotation_for_member_annotations`.
 - The empty `MapKitBridge.h` header and its `publicHeadersPath`.
+- **Breaking:** `MKLocalSearchCompleter::refresh`, `refresh_with_timeout` and
+  `refresh_with_delegate`. They blocked until MapKit delivered on the main
+  queue, which cannot happen on the main thread the completer needs; use
+  `set_delegate`.
 
 ## [0.3.9] - 2026-05-20
 

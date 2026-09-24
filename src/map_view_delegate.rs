@@ -1,6 +1,6 @@
 use core::ffi::{c_char, c_void};
 use std::ptr::{self, NonNull};
-use std::sync::{Mutex, MutexGuard, TryLockError};
+use std::sync::Mutex;
 
 use doom_fish_utils::callback_context::CallbackContext;
 use doom_fish_utils::panic_safe::catch_user_panic_result;
@@ -15,7 +15,7 @@ use crate::overlay::{
     MKPolyline, MKTileOverlay,
 };
 use crate::overlay_renderer::MKOverlayRendering;
-use crate::private::owned_handle;
+use crate::private::{owned_handle, try_lock};
 
 /// Wraps `MKMapViewDelegate`.
 pub trait MKMapViewDelegate: Send + 'static {
@@ -228,14 +228,6 @@ const fn tracking_mode(code: i64) -> Option<MKUserTrackingMode> {
     }
 }
 
-fn lock(state: &DelegateState) -> Option<MutexGuard<'_, Box<dyn MKMapViewDelegate>>> {
-    match state.try_lock() {
-        Ok(guard) => Some(guard),
-        Err(TryLockError::Poisoned(poisoned)) => Some(poisoned.into_inner()),
-        Err(TryLockError::WouldBlock) => None,
-    }
-}
-
 fn dispatch(
     delegate: &mut dyn MKMapViewDelegate,
     event: i32,
@@ -323,7 +315,7 @@ unsafe extern "C" fn event_trampoline(
         };
         unsafe {
             CallbackContext::<DelegateState>::with(context, "MKMapViewDelegate event", |state| {
-                if let Some(mut delegate) = lock(state) {
+                if let Some(mut delegate) = try_lock(state) {
                     dispatch(
                         &mut **delegate,
                         event,
@@ -353,7 +345,8 @@ unsafe extern "C" fn renderer_trampoline(
         };
         unsafe {
             CallbackContext::<DelegateState>::with(context, "MKMapViewDelegate renderer", |state| {
-                let renderer = lock(state)?.map_view_renderer_for_overlay(&map_view, &overlay)?;
+                let renderer =
+                    try_lock(state)?.map_view_renderer_for_overlay(&map_view, &overlay)?;
                 Some(ffi::mk_object_retain(renderer.as_raw_renderer()))
             })
         }

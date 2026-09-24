@@ -17,22 +17,13 @@ fn local_search_completer_result_types_combine() {
 }
 
 #[test]
-#[ignore = "requires a dedicated main-thread process"]
-fn local_search_completer_builds() {
-    let completer = MKLocalSearchCompleter::new().unwrap();
-    completer.set_query_fragment("coffee").unwrap();
-    completer
-        .set_result_types(
-            MKLocalSearchCompleterResultType::ADDRESS
-                | MKLocalSearchCompleterResultType::POINT_OF_INTEREST,
-        )
-        .unwrap();
-
-    assert_eq!(completer.query_fragment().unwrap(), "coffee");
+fn local_search_completer_refuses_other_threads() {
+    let error = MKLocalSearchCompleter::new()
+        .map(drop)
+        .expect_err("the test harness runs tests off the main thread");
     assert!(
-        completer
-            .result_types()
-            .unwrap()
-            .contains(MKLocalSearchCompleterResultType::POINT_OF_INTEREST)
+        matches!(error, MapKitError::MainThreadRequired(_)),
+        "{error:?}"
     );
+    assert!(error.to_string().contains("main thread"), "{error}");
 }

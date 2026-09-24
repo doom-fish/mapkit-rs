@@ -3,6 +3,7 @@
 use core::ffi::{c_char, c_void};
 use std::ffi::CString;
 use std::ptr::NonNull;
+use std::sync::{Mutex, MutexGuard, TryLockError};
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -11,6 +12,14 @@ use crate::error::MapKitError;
 use crate::ffi;
 
 pub trait Sealed {}
+
+pub fn try_lock<T: ?Sized>(state: &Mutex<T>) -> Option<MutexGuard<'_, T>> {
+    match state.try_lock() {
+        Ok(guard) => Some(guard),
+        Err(TryLockError::Poisoned(poisoned)) => Some(poisoned.into_inner()),
+        Err(TryLockError::WouldBlock) => None,
+    }
+}
 
 /// Wraps `cstring_from_str`.
 pub fn cstring_from_str(value: &str, context: &str) -> Result<CString, MapKitError> {

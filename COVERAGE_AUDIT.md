@@ -50,7 +50,7 @@ This audit counts named top-level macOS declarations from MapKit.framework heade
 | MKLocalPointsOfInterestRequest | interface | MKLocalPointsOfInterestRequest.h | MKLocalPointsOfInterestRequest (src/point_of_interest.rs) |
 | MKLocalSearch | interface | MKLocalSearch.h | MKLocalSearch (src/local_search.rs) |
 | MKLocalSearchCompleter | interface | MKLocalSearchCompleter.h | MKLocalSearchCompleter (src/local_search_completer.rs) |
-| MKLocalSearchCompleterDelegate | protocol | MKLocalSearchCompleter.h | MKLocalSearchCompleterDelegate (src/local_search_completer.rs) |
+| MKLocalSearchCompleterDelegate | protocol | MKLocalSearchCompleter.h | MKLocalSearchCompleterDelegate (src/local_search_completer.rs) via `MKLocalSearchCompleter::set_delegate` |
 | MKLocalSearchCompleterResultType | enum | MKLocalSearchCompleter.h | MKLocalSearchCompleterResultType (src/local_search_completer.rs) |
 | MKLocalSearchCompletion | interface | MKLocalSearchCompleter.h | MKLocalSearchCompletion (src/local_search_completer.rs) |
 | MKLocalSearchRegionPriority | enum | MKTypes.h | MKLocalSearchRegionPriority (src/local_search.rs) |

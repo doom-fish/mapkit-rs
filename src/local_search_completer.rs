@@ -1,8 +1,10 @@
-use core::ffi::c_void;
+use core::ffi::{c_char, c_void};
 use std::ops::{BitOr, BitOrAssign};
 use std::ptr::{self, NonNull};
-use std::time::Duration;
+use std::sync::Mutex;
 
+use doom_fish_utils::callback_context::CallbackContext;
+use doom_fish_utils::panic_safe::catch_user_panic_result;
 use serde::{Deserialize, Serialize};
 
 use crate::address::MKAddressFilter;
@@ -11,7 +13,7 @@ use crate::ffi;
 use crate::geometry::MKCoordinateRegion;
 use crate::local_search::MKLocalSearchRegionPriority;
 use crate::point_of_interest::MKPointOfInterestFilter;
-use crate::private::{json_cstring, owned_handle, parse_json_ptr, unit_result};
+use crate::private::{json_cstring, owned_handle, parse_json_ptr, try_lock, unit_result};
 
 /// Wraps `MKLocalSearchCompleterResultType`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -115,7 +117,7 @@ struct MKLocalSearchCompleterOptions {
 }
 
 /// Wraps `MKLocalSearchCompleterDelegate`.
-pub trait MKLocalSearchCompleterDelegate {
+pub trait MKLocalSearchCompleterDelegate: Send + 'static {
     fn completer_did_update_results(
         &mut self,
         _completer: &MKLocalSearchCompleter,
@@ -144,6 +146,10 @@ impl MKLocalSearchCompleter {
         let raw = unsafe { ffi::mk_local_search_completer_new(&raw mut error) };
         let raw = owned_handle(raw, error, "failed to create MKLocalSearchCompleter")?;
         Ok(Self { raw })
+    }
+
+    fn from_owned(raw: NonNull<c_void>) -> Self {
+        Self { raw }
     }
 
     fn state(&self) -> Result<MKLocalSearchCompleterState, MapKitError> {
@@ -280,46 +286,39 @@ impl MKLocalSearchCompleter {
         unsafe { ffi::mk_local_search_completer_cancel(self.raw.as_ptr()) };
     }
 
-    /// Wraps `MKLocalSearchCompleter.refresh`.
-    pub fn refresh(&self) -> Result<Vec<MKLocalSearchCompletion>, MapKitError> {
-        self.refresh_with_timeout(Duration::from_secs(30))
-    }
-
-    /// Wraps `MKLocalSearchCompleter.refreshWithTimeout`.
-    pub fn refresh_with_timeout(
+    pub fn set_delegate<D: MKLocalSearchCompleterDelegate>(
         &self,
-        timeout: Duration,
-    ) -> Result<Vec<MKLocalSearchCompletion>, MapKitError> {
+        delegate: D,
+    ) -> Result<MKLocalSearchCompleterDelegateRegistration, MapKitError> {
+        let delegate: Box<dyn MKLocalSearchCompleterDelegate> = Box::new(delegate);
+        let context = CallbackContext::new(Mutex::new(delegate));
+        let completer = NonNull::new(unsafe { ffi::mk_object_retain(self.raw.as_ptr()) })
+            .ok_or_else(|| {
+                MapKitError::OperationFailed("failed to retain MKLocalSearchCompleter".into())
+            })?;
         let mut error = ptr::null_mut();
-        let payload = unsafe {
-            ffi::mk_local_search_completer_refresh_json(
-                self.raw.as_ptr(),
-                timeout.as_millis().try_into().unwrap_or(u64::MAX),
+        let proxy = unsafe {
+            ffi::mk_local_search_completer_set_delegate(
+                completer.as_ptr(),
+                context.as_ptr(),
+                CallbackContext::<DelegateState>::RETAIN,
+                CallbackContext::<DelegateState>::RELEASE,
+                event_trampoline,
                 &raw mut error,
             )
         };
-        if payload.is_null() {
-            Err(unsafe {
-                MapKitError::from_error_ptr(error, "MKLocalSearchCompleter refresh failed")
-            })
-        } else {
-            unsafe { parse_json_ptr(payload, "[MKLocalSearchCompletion]") }
-        }
-    }
-
-    /// Wraps `MKLocalSearchCompleter.refreshWithDelegate`.
-    pub fn refresh_with_delegate<D: MKLocalSearchCompleterDelegate>(
-        &self,
-        delegate: &mut D,
-        timeout: Duration,
-    ) -> Result<Vec<MKLocalSearchCompletion>, MapKitError> {
-        match self.refresh_with_timeout(timeout) {
-            Ok(results) => {
-                delegate.completer_did_update_results(self, &results);
-                Ok(results)
-            }
+        match owned_handle(
+            proxy,
+            error,
+            "failed to set the MKLocalSearchCompleter delegate",
+        ) {
+            Ok(proxy) => Ok(MKLocalSearchCompleterDelegateRegistration {
+                completer,
+                proxy,
+                context,
+            }),
             Err(error) => {
-                delegate.completer_did_fail_with_error(self, &error);
+                unsafe { ffi::mk_object_release(completer.as_ptr()) };
                 Err(error)
             }
         }
@@ -330,4 +329,66 @@ impl Drop for MKLocalSearchCompleter {
     fn drop(&mut self) {
         unsafe { ffi::mk_local_search_completer_release(self.raw.as_ptr()) };
     }
+}
+
+type DelegateState = Mutex<Box<dyn MKLocalSearchCompleterDelegate>>;
+
+#[must_use = "dropping the registration removes the delegate"]
+#[derive(Debug)]
+pub struct MKLocalSearchCompleterDelegateRegistration {
+    completer: NonNull<c_void>,
+    proxy: NonNull<c_void>,
+    context: CallbackContext<DelegateState>,
+}
+
+impl Drop for MKLocalSearchCompleterDelegateRegistration {
+    fn drop(&mut self) {
+        self.context.deactivate();
+        unsafe {
+            ffi::mk_local_search_completer_clear_delegate(
+                self.completer.as_ptr(),
+                self.proxy.as_ptr(),
+            );
+            ffi::mk_object_release(self.proxy.as_ptr());
+            ffi::mk_object_release(self.completer.as_ptr());
+        }
+    }
+}
+
+unsafe extern "C" fn event_trampoline(
+    context: *mut c_void,
+    completer: *mut c_void,
+    results: *mut c_char,
+    error: *mut c_char,
+) {
+    let _ = catch_user_panic_result("MKLocalSearchCompleterDelegate event", || {
+        let parsed = unsafe {
+            parse_json_ptr::<Vec<MKLocalSearchCompletion>>(results, "[MKLocalSearchCompletion]")
+        };
+        let outcome = if error.is_null() {
+            parsed
+        } else {
+            Err(unsafe { MapKitError::from_error_ptr(error, "MKLocalSearchCompleter failed") })
+        };
+        let Some(completer) = NonNull::new(completer).map(MKLocalSearchCompleter::from_owned)
+        else {
+            return;
+        };
+        unsafe {
+            CallbackContext::<DelegateState>::with(
+                context,
+                "MKLocalSearchCompleterDelegate event",
+                |state| {
+                    if let Some(mut delegate) = try_lock(state) {
+                        match &outcome {
+                            Ok(results) => {
+                                delegate.completer_did_update_results(&completer, results);
+                            }
+                            Err(error) => delegate.completer_did_fail_with_error(&completer, error),
+                        }
+                    }
+                },
+            )
+        };
+    });
 }

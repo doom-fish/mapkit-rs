@@ -109,18 +109,6 @@ public func mkrSetMessageError(
     }
 }
 
-public func mkrSyncOnMain<T>(_ operation: @escaping () throws -> T) throws -> T {
-    if Thread.isMainThread {
-        return try operation()
-    }
-
-    var outcome: Result<T, Error>!
-    DispatchQueue.main.sync {
-        outcome = Result { try operation() }
-    }
-    return try outcome.get()
-}
-
 final class MKRLockedOutcome<T> {
     private let lock = NSLock()
     private var value: Result<T, Error>?
