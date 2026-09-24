@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `COVERAGE.md` and the audits no longer present the Rust-only control and
   view-controller models or the unconnected `MKMapViewDelegate` as bridged
   AppKit objects. The README states the macOS 13 minimum and the thread rules.
+- Every overlay renderer call hopped to the main queue with
+  `DispatchQueue.main.sync`, which deadlocked whenever the main thread was
+  blocked, for example under the default test harness. MapKit's renderers are
+  not main-thread bound, so the bridge now calls them on the caller's thread.
 
 ### Changed
 

@@ -38,5 +38,5 @@ The audited public macOS 26.2 surface is covered for non-exempt declarations: 24
 
 ## Notes
 
-- `MKMapView`, the annotation views and `MKUserTrackingButton` are real AppKit objects and must be used on the main thread. The controls, selection accessories and view controllers listed above are Rust-side models, not `NSView` / `NSViewController` bindings.
+- `MKMapView`, the annotation views and `MKUserTrackingButton` are real AppKit objects and must be used on the main thread. Overlay renderers are not main-thread bound and can be created and styled on any thread. The controls, selection accessories and view controllers listed above are Rust-side models, not `NSView` / `NSViewController` bindings.
 - `COVERAGE_AUDIT.md` is the source-of-truth symbol ledger used to track verified vs exempt declarations.

@@ -89,9 +89,7 @@ public func mk_overlay_renderer_new(
     }
 
     do {
-        let renderer = try mkrSyncOnMain {
-            MKOverlayRenderer(overlay: try mkrBorrowOverlay(overlay))
-        }
+        let renderer = MKOverlayRenderer(overlay: try mkrBorrowOverlay(overlay))
         return mkrRetain(renderer)
     } catch {
         mkrSetError(outError, error)
@@ -111,7 +109,7 @@ public func mk_overlay_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
-        let payload = try mkrSyncOnMain { mkrEncodeOverlayRendererState(bridge) }
+        let payload = mkrEncodeOverlayRendererState(bridge)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -133,10 +131,8 @@ public func mk_overlay_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKROverlayRendererOptionsPayload.self)
-        try mkrSyncOnMain {
-            if let alpha = payload.alpha {
-                bridge.alpha = alpha
-            }
+        if let alpha = payload.alpha {
+            bridge.alpha = alpha
         }
     } catch {
         mkrSetError(outError, error)
@@ -157,9 +153,7 @@ public func mk_overlay_renderer_can_draw_map_rect_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRMapRectZoomScalePayload.self)
-        return try mkrSyncOnMain {
-            bridge.canDraw(mkrMapRect(from: payload.mapRect), zoomScale: payload.zoomScale)
-        }
+        return bridge.canDraw(mkrMapRect(from: payload.mapRect), zoomScale: payload.zoomScale)
     } catch {
         mkrSetError(outError, error)
         return false
@@ -176,14 +170,8 @@ public func mk_overlay_renderer_set_needs_display(
         return
     }
 
-    do {
-        let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
-        try mkrSyncOnMain {
-            bridge.setNeedsDisplay()
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
+    let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
+    bridge.setNeedsDisplay()
 }
 
 @_cdecl("mk_overlay_renderer_set_needs_display_in_map_rect_json")
@@ -200,9 +188,7 @@ public func mk_overlay_renderer_set_needs_display_in_map_rect_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRMapRectPayload.self)
-        try mkrSyncOnMain {
-            bridge.setNeedsDisplay(mkrMapRect(from: payload))
-        }
+        bridge.setNeedsDisplay(mkrMapRect(from: payload))
     } catch {
         mkrSetError(outError, error)
     }
@@ -222,9 +208,7 @@ public func mk_overlay_renderer_set_needs_display_in_map_rect_zoom_scale_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayRenderer.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKRMapRectZoomScalePayload.self)
-        try mkrSyncOnMain {
-            bridge.setNeedsDisplay(mkrMapRect(from: payload.mapRect), zoomScale: payload.zoomScale)
-        }
+        bridge.setNeedsDisplay(mkrMapRect(from: payload.mapRect), zoomScale: payload.zoomScale)
     } catch {
         mkrSetError(outError, error)
     }
@@ -247,9 +231,7 @@ public func mk_overlay_path_renderer_new(
     }
 
     do {
-        let renderer = try mkrSyncOnMain {
-            MKOverlayPathRenderer(overlay: try mkrBorrowOverlay(overlay))
-        }
+        let renderer = MKOverlayPathRenderer(overlay: try mkrBorrowOverlay(overlay))
         return mkrRetain(renderer)
     } catch {
         mkrSetError(outError, error)
@@ -269,7 +251,7 @@ public func mk_overlay_path_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayPathRenderer.self)
-        let payload = try mkrSyncOnMain { mkrEncodeOverlayPathRendererState(bridge) }
+        let payload = mkrEncodeOverlayPathRendererState(bridge)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -291,19 +273,17 @@ public func mk_overlay_path_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKOverlayPathRenderer.self)
         let payload = try mkrDecodeJSON(payloadJSON, as: MKROverlayPathRendererOptionsPayload.self)
-        try mkrSyncOnMain {
-            if let lineWidth = payload.lineWidth {
-                bridge.lineWidth = lineWidth
-            }
-            if let lineDashPhase = payload.lineDashPhase {
-                bridge.lineDashPhase = lineDashPhase
-            }
-            if payload.lineDashPatternPresent {
-                bridge.lineDashPattern = payload.lineDashPattern?.map(NSNumber.init(value:))
-            }
-            if let shouldRasterize = payload.shouldRasterize {
-                bridge.shouldRasterize = shouldRasterize
-            }
+        if let lineWidth = payload.lineWidth {
+            bridge.lineWidth = lineWidth
+        }
+        if let lineDashPhase = payload.lineDashPhase {
+            bridge.lineDashPhase = lineDashPhase
+        }
+        if payload.lineDashPatternPresent {
+            bridge.lineDashPattern = payload.lineDashPattern?.map(NSNumber.init(value:))
+        }
+        if let shouldRasterize = payload.shouldRasterize {
+            bridge.shouldRasterize = shouldRasterize
         }
     } catch {
         mkrSetError(outError, error)
@@ -346,14 +326,9 @@ public func mk_circle_renderer_new(
         return nil
     }
 
-    do {
-        let overlay = mkrBorrow(circle, as: MKCircle.self)
-        let renderer = try mkrSyncOnMain { MKCircleRenderer(circle: overlay) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let overlay = mkrBorrow(circle, as: MKCircle.self)
+    let renderer = MKCircleRenderer(circle: overlay)
+    return mkrRetain(renderer)
 }
 
 @_cdecl("mk_circle_renderer_state_json")
@@ -368,9 +343,7 @@ public func mk_circle_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKCircleRenderer.self)
-        let payload = try mkrSyncOnMain {
-            mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
-        }
+        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -392,14 +365,12 @@ public func mk_circle_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKCircleRenderer.self)
         let payload = try mkrBuildStrokeRendererOptions(payloadJSON)
-        try mkrSyncOnMain {
-            mkrApplyStrokeRendererOptions(
-                bridge,
-                payload,
-                setStart: { $0.strokeStart = $1 },
-                setEnd: { $0.strokeEnd = $1 }
-            )
-        }
+        mkrApplyStrokeRendererOptions(
+            bridge,
+            payload,
+            setStart: { $0.strokeStart = $1 },
+            setEnd: { $0.strokeEnd = $1 }
+        )
     } catch {
         mkrSetError(outError, error)
     }
@@ -421,14 +392,9 @@ public func mk_polyline_renderer_new(
         return nil
     }
 
-    do {
-        let overlay = mkrBorrow(polyline, as: MKPolyline.self)
-        let renderer = try mkrSyncOnMain { MKPolylineRenderer(polyline: overlay) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let overlay = mkrBorrow(polyline, as: MKPolyline.self)
+    let renderer = MKPolylineRenderer(polyline: overlay)
+    return mkrRetain(renderer)
 }
 
 @_cdecl("mk_polyline_renderer_state_json")
@@ -443,9 +409,7 @@ public func mk_polyline_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKPolylineRenderer.self)
-        let payload = try mkrSyncOnMain {
-            mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
-        }
+        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -467,14 +431,12 @@ public func mk_polyline_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKPolylineRenderer.self)
         let payload = try mkrBuildStrokeRendererOptions(payloadJSON)
-        try mkrSyncOnMain {
-            mkrApplyStrokeRendererOptions(
-                bridge,
-                payload,
-                setStart: { $0.strokeStart = $1 },
-                setEnd: { $0.strokeEnd = $1 }
-            )
-        }
+        mkrApplyStrokeRendererOptions(
+            bridge,
+            payload,
+            setStart: { $0.strokeStart = $1 },
+            setEnd: { $0.strokeEnd = $1 }
+        )
     } catch {
         mkrSetError(outError, error)
     }
@@ -496,14 +458,9 @@ public func mk_gradient_polyline_renderer_new(
         return nil
     }
 
-    do {
-        let overlay = mkrBorrow(polyline, as: MKPolyline.self)
-        let renderer = try mkrSyncOnMain { MKGradientPolylineRenderer(polyline: overlay) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let overlay = mkrBorrow(polyline, as: MKPolyline.self)
+    let renderer = MKGradientPolylineRenderer(polyline: overlay)
+    return mkrRetain(renderer)
 }
 
 @_cdecl("mk_gradient_polyline_renderer_state_json")
@@ -518,9 +475,7 @@ public func mk_gradient_polyline_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKGradientPolylineRenderer.self)
-        let payload = try mkrSyncOnMain {
-            mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
-        }
+        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -542,14 +497,12 @@ public func mk_gradient_polyline_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKGradientPolylineRenderer.self)
         let payload = try mkrBuildStrokeRendererOptions(payloadJSON)
-        try mkrSyncOnMain {
-            mkrApplyStrokeRendererOptions(
-                bridge,
-                payload,
-                setStart: { $0.strokeStart = $1 },
-                setEnd: { $0.strokeEnd = $1 }
-            )
-        }
+        mkrApplyStrokeRendererOptions(
+            bridge,
+            payload,
+            setStart: { $0.strokeStart = $1 },
+            setEnd: { $0.strokeEnd = $1 }
+        )
     } catch {
         mkrSetError(outError, error)
     }
@@ -571,14 +524,9 @@ public func mk_polygon_renderer_new(
         return nil
     }
 
-    do {
-        let overlay = mkrBorrow(polygon, as: MKPolygon.self)
-        let renderer = try mkrSyncOnMain { MKPolygonRenderer(polygon: overlay) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let overlay = mkrBorrow(polygon, as: MKPolygon.self)
+    let renderer = MKPolygonRenderer(polygon: overlay)
+    return mkrRetain(renderer)
 }
 
 @_cdecl("mk_polygon_renderer_state_json")
@@ -593,9 +541,7 @@ public func mk_polygon_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKPolygonRenderer.self)
-        let payload = try mkrSyncOnMain {
-            mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
-        }
+        let payload = mkrEncodeStrokeRendererState(bridge, strokeStart: bridge.strokeStart, strokeEnd: bridge.strokeEnd)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -617,14 +563,12 @@ public func mk_polygon_renderer_apply_options_json(
     do {
         let bridge = mkrBorrow(renderer, as: MKPolygonRenderer.self)
         let payload = try mkrBuildStrokeRendererOptions(payloadJSON)
-        try mkrSyncOnMain {
-            mkrApplyStrokeRendererOptions(
-                bridge,
-                payload,
-                setStart: { $0.strokeStart = $1 },
-                setEnd: { $0.strokeEnd = $1 }
-            )
-        }
+        mkrApplyStrokeRendererOptions(
+            bridge,
+            payload,
+            setStart: { $0.strokeStart = $1 },
+            setEnd: { $0.strokeEnd = $1 }
+        )
     } catch {
         mkrSetError(outError, error)
     }
@@ -646,14 +590,9 @@ public func mk_tile_overlay_renderer_new(
         return nil
     }
 
-    do {
-        let bridge = mkrBorrow(overlay, as: MKTileOverlay.self)
-        let renderer = try mkrSyncOnMain { MKTileOverlayRenderer(tileOverlay: bridge) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let bridge = mkrBorrow(overlay, as: MKTileOverlay.self)
+    let renderer = MKTileOverlayRenderer(tileOverlay: bridge)
+    return mkrRetain(renderer)
 }
 
 @_cdecl("mk_tile_overlay_renderer_state_json")
@@ -668,7 +607,7 @@ public func mk_tile_overlay_renderer_state_json(
 
     do {
         let bridge = mkrBorrow(renderer, as: MKTileOverlayRenderer.self)
-        let payload = try mkrSyncOnMain { mkrEncodeOverlayRendererState(bridge) }
+        let payload = mkrEncodeOverlayRendererState(bridge)
         return mkrCString(try mkrEncodeJSON(payload))
     } catch {
         mkrSetError(outError, error)
@@ -686,14 +625,8 @@ public func mk_tile_overlay_renderer_reload_data(
         return
     }
 
-    do {
-        let bridge = mkrBorrow(renderer, as: MKTileOverlayRenderer.self)
-        try mkrSyncOnMain {
-            bridge.reloadData()
-        }
-    } catch {
-        mkrSetError(outError, error)
-    }
+    let bridge = mkrBorrow(renderer, as: MKTileOverlayRenderer.self)
+    bridge.reloadData()
 }
 
 @_cdecl("mk_tile_overlay_renderer_release")
@@ -712,14 +645,9 @@ public func mk_multi_polyline_renderer_new(
         return nil
     }
 
-    do {
-        let multiPolyline = mkrBorrow(overlay, as: MKMultiPolyline.self)
-        let renderer = try mkrSyncOnMain { MKMultiPolylineRenderer(multiPolyline: multiPolyline) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let multiPolyline = mkrBorrow(overlay, as: MKMultiPolyline.self)
+    let renderer = MKMultiPolylineRenderer(multiPolyline: multiPolyline)
+    return mkrRetain(renderer)
 }
 
 @_cdecl("mk_multi_polygon_renderer_new")
@@ -732,12 +660,7 @@ public func mk_multi_polygon_renderer_new(
         return nil
     }
 
-    do {
-        let multiPolygon = mkrBorrow(overlay, as: MKMultiPolygon.self)
-        let renderer = try mkrSyncOnMain { MKMultiPolygonRenderer(multiPolygon: multiPolygon) }
-        return mkrRetain(renderer)
-    } catch {
-        mkrSetError(outError, error)
-        return nil
-    }
+    let multiPolygon = mkrBorrow(overlay, as: MKMultiPolygon.self)
+    let renderer = MKMultiPolygonRenderer(multiPolygon: multiPolygon)
+    return mkrRetain(renderer)
 }

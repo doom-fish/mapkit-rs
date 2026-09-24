@@ -117,6 +117,7 @@ The delegate also receives region, loading, rendering, selection, drag, user-loc
 - MapKit calls the map view delegate on the main thread. A callback that MapKit raises while another callback of the same delegate is still running is skipped rather than re-entering the delegate.
 - MapKit delivers `MKLocalSearch`, `MKDirections`, geocoding, Look Around, `MKMapItemRequest` and `MKLocalSearchCompleter` results on the main queue. Their synchronous methods wait for that result, so they return an error on the main thread instead of spinning its run loop. Call them from another thread while the main thread runs its run loop, or use the `async` API. A wait that times out cancels the request and returns an error.
 - `MKMapSnapshotter` delivers on a background queue and works from any thread.
+- Overlay renderers aren't bound to a thread: MapKit draws them on background threads, and they can be created and styled on any thread.
 
 ## Highlights
 

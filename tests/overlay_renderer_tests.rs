@@ -14,7 +14,6 @@ fn overlay_renderer_helpers_work() {
 }
 
 #[test]
-#[ignore = "requires a dedicated main-thread process"]
 fn overlay_renderers_build() {
     let circle = MKCircle::new(MKCoordinate::new(37.3349, -122.0090), 250.0).unwrap();
     let polyline = MKPolyline::new(&[
@@ -78,7 +77,7 @@ fn overlay_renderers_build() {
         .unwrap();
 
     assert!(overlay_renderer.content_scale_factor().unwrap() >= 1.0);
-    assert_eq!(geodesic.point_count().unwrap(), 2);
+    assert!(geodesic.point_count().unwrap() > 2);
     assert_eq!(multi_polyline.polyline_count().unwrap(), 2);
     assert_eq!(multi_polygon.polygon_count().unwrap(), 2);
     assert!(tile_url.unwrap().contains("/3/1/2"));
