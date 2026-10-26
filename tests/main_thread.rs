@@ -97,9 +97,10 @@ fn annotation_views_build() {
         view.annotation_title().unwrap().as_deref(),
         Some("Apple Park")
     );
-    assert!(!MKAnnotationView::callout_info_did_change_notification()
-        .unwrap()
-        .is_empty());
+    assert_ne!(
+        MKAnnotationView::callout_info_did_change_notification().unwrap(),
+        ""
+    );
 
     let marker = MKMarkerAnnotationView::new(Some(&annotation), Some("marker-id")).unwrap();
     marker.set_glyph_text(Some("A")).unwrap();
@@ -182,7 +183,10 @@ fn completer_state_round_trips_on_the_main_thread() {
     assert_eq!(completer.query_fragment().unwrap(), "");
     assert_eq!(completer.result_types().unwrap(), result_types);
     assert!((completer.region().unwrap().center.latitude - apple_park().latitude).abs() < 1e-6);
-    assert!(completer.results().unwrap().is_empty());
+    assert_eq!(
+        completer.results().unwrap(),
+        [] as [mapkit::MKLocalSearchCompletion; 0]
+    );
 }
 
 #[derive(Default)]
@@ -337,7 +341,7 @@ fn completer_delegates_are_replaced_and_released() {
         drop(second);
     });
     assert_eq!(log.drops.load(Ordering::SeqCst), 2);
-    assert!(log.take().is_empty());
+    assert_eq!(log.take(), [] as [std::string::String; 0]);
 }
 
 fn completer_delegate_receives_results_on_the_main_thread() {
@@ -439,7 +443,7 @@ fn delegate_receives_region_changes_and_supplies_renderers() {
     assert_eq!(log.drops.load(Ordering::SeqCst), 1);
 
     autoreleasing(|| change_region(&map_view, 2_000.0));
-    assert!(log.take().is_empty());
+    assert_eq!(log.take(), [] as [std::string::String; 0]);
 }
 
 fn replacing_the_delegate_keeps_the_new_one() {
